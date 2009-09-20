@@ -23,8 +23,10 @@ import javax.swing.event.ChangeListener;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -34,46 +36,62 @@ import java.util.Random;
  */
 public class EarTrainer {
   private static final int MIDDLE_C = 60;
-  private static final int LOWEST_START = MIDDLE_C - Interval.Octave.semitones;
-  private static final int HIGHEST_START = MIDDLE_C + Interval.Octave.semitones;
+  private static final int LOWEST_STARTING_NOTE = Interval.Octave.subtractFromNote(MIDDLE_C);
+  private static final int HIGHEST_STARTING_NOTE = Interval.Octave.addToNote(MIDDLE_C);
   private static final int BEATS_PER_MINUTE = 90;
 
   public static void main(String[] args) throws UnavailableException {
-    SequencePlayer player = new SequencePlayer();
-    QuestionChooser chooser = new QuestionChooser(new Random());
-    Quizzer quizzer = new Quizzer(chooser, player);
 
-    startUI(makePage(quizzer));
+    // assembly
+    AnswerChoices choices = new AnswerChoices();
+    QuestionChooser chooser = new QuestionChooser(choices, new Random());
+    SequencePlayer player = new SequencePlayer();
+    Quizzer quizzer = new Quizzer(chooser, choices, player);
+    JFrame frame = makeWindow(makePage(quizzer, choices));
+
+    // startup
+    frame.setVisible(true);
     quizzer.nextQuestion();
   }
 
   // ============= Swing UI ===============
 
-  private static void startUI(JComponent content) {
+  private static JFrame makeWindow(JComponent content) {
     JFrame frame = new JFrame("Ear Trainer");
     frame.getContentPane().add(content);
-
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocation(100, 10);
-    frame.setVisible(true);
+    return frame;
   }
 
-  private static Box makePage(Quizzer quizzer) {
+  private static JComponent makePage(Quizzer quizzer, AnswerChoices choices) {
     Box page = Box.createVerticalBox();
     page.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-
-    Box header = Box.createHorizontalBox();
-    header.add(new JLabel(
-        "What's the difference in pitch between these two notes?"));
-    header.add(Box.createHorizontalStrut(4));
-    header.add(new JButton(new PlayAction(quizzer)));
-    page.add(header);
-
+    page.add(makeHeader(quizzer));
     page.add(Box.createVerticalStrut(16));
-    page.add(makeAnswerButtonGrid(quizzer));
-
+    page.add(makeAnswerButtonGrid(quizzer, choices));
     return page;
+  }
+
+  private static JComponent makeHeader(final Quizzer quizzer) {
+    Box header = Box.createHorizontalBox();
+    header.add(new JLabel("What's the difference in pitch between these two notes?"));
+    header.add(Box.createHorizontalStrut(4));
+    SimpleAction playIt = new SimpleAction("Play it again") {
+      @Override
+      void act() throws UnavailableException {
+        quizzer.playQuestion();
+      }
+    };
+    final JButton playItButton = new JButton(playIt);
+    quizzer.setAnswerChosenListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent changeEvent) {
+        playItButton.requestFocusInWindow();
+      }
+    });
+    header.add(playItButton);
+    return header;
   }
 
   /**
@@ -81,7 +99,7 @@ public class EarTrainer {
    * with buttons corresponding to black keys (ascending from C)
    * on the left.
    */
-  private static JPanel makeAnswerButtonGrid(final Quizzer quizzer) {
+  private static JPanel makeAnswerButtonGrid(final Quizzer quizzer, final AnswerChoices choices) {
     JPanel intervals = new JPanel();
     intervals.setLayout(new GridLayout(8, 2));
 
@@ -92,77 +110,106 @@ public class EarTrainer {
       } else {
         isLeftColumn = !isLeftColumn;
       }
-      final JButton button = new JButton(new ChooseAnswerAction(quizzer, interval));
-      button.setEnabled(quizzer.isAnswerEnabled(interval));
-      quizzer.putEnabledAnswerListener(interval, new ChangeListener() {
-        public void stateChanged(ChangeEvent changeEvent) {
-          button.setEnabled(quizzer.isAnswerEnabled(interval));
-        }
-      });
-      intervals.add(button);
+      intervals.add(makeAnswerButton(quizzer, choices, interval));
     }
     return intervals;
   }
 
-  static class PlayAction extends AbstractAction {
-    private final Quizzer quizzer;
+  private static JButton makeAnswerButton(final Quizzer quizzer, final AnswerChoices choices,
+      final Interval interval) {
 
-    PlayAction(Quizzer quizzer) {
-      this.quizzer = quizzer;
-      putValue(Action.NAME, "Play them again");
-    }
-
-    public void actionPerformed(ActionEvent actionEvent) {
-      try {
-        quizzer.playQuestion();
-      } catch (UnavailableException e) {
-        reportError(e);
-      }
-    }
-  }
-
-  static class ChooseAnswerAction extends AbstractAction {
-    private final Quizzer quizzer;
-    private final Interval interval;
-
-    public ChooseAnswerAction(Quizzer quizzer, Interval interval) {
-      this.quizzer = quizzer;
-      this.interval = interval;
-      putValue(Action.NAME, interval.toString());
-    }
-
-    public void actionPerformed(ActionEvent actionEvent) {
-      try {
+    final JButton button = new JButton(new SimpleAction(interval.getName()) {
+      @Override
+      void act() throws UnavailableException {
         quizzer.chooseAnswer(interval);
-      } catch (UnavailableException e) {
-        reportError(e);
       }
-    }
+    });
+
+    choices.putEnabledAnswerListener(interval, new ChangeListener() {
+      public void stateChanged(ChangeEvent changeEvent) {
+        button.setEnabled(choices.isAnswerEnabled(interval));
+      }
+    });
+
+    return button;
   }
 
-  private static void reportError(Exception e) {
-    Toolkit.getDefaultToolkit().beep();
-    e.printStackTrace(System.err);
+  static abstract class SimpleAction extends AbstractAction {
+    SimpleAction(String name) {
+      putValue(Action.NAME, name);
+    }
+
+    public void actionPerformed(ActionEvent actionEvent) {
+      try {
+        act();
+      } catch (UnavailableException e) {
+        Toolkit.getDefaultToolkit().beep();
+        e.printStackTrace(System.err);
+      }
+    }
+
+    abstract void act() throws UnavailableException;
+  }
+
+  // =========== Music Theory ===========
+
+  enum Interval {
+    Unison, Minor_Second, Major_Second, Minor_Third, Major_Third, Perfect_Fourth,
+    Tritone, Perfect_Fifth, Minor_Sixth, Major_Sixth, Minor_Seventh, Major_Seventh,
+    Octave;
+
+    String getName() {
+      return toString().replace("_", " ");
+    }
+
+    boolean isBlackKey() {
+      return this==Tritone || name().startsWith("Minor");
+    }
+
+    int addToNote(int note, boolean ascending) {
+      if (ascending) {
+        return addToNote(note);
+      } else {
+        return subtractFromNote(note);
+      }
+    }
+
+    private int addToNote(int note) {
+      return note + ordinal();
+    }
+
+    private int subtractFromNote(int note) {
+      return note - ordinal();
+    }
   }
 
   // ============= Rules of the Game ==============
 
-  static class Quizzer {
-    private final QuestionChooser chooser;
-    private final SequencePlayer player;
-    private final EnumSet<Interval> enabledAnswers;
-    private final Map<Interval, ChangeListener> enabledAnswerListeners;
-    private Question question;
+  static class Question {
+    private final Sequence prompt;
+    private final Interval answer;
 
-    Quizzer(QuestionChooser chooser, SequencePlayer player) {
-      this.chooser = chooser;
-      this.player = player;
-      this.enabledAnswers = EnumSet.allOf(Interval.class);
-      this.enabledAnswerListeners = new HashMap<Interval, ChangeListener>();
+    Question(Sequence prompt, Interval answer) {
+      this.prompt = prompt;
+      this.answer = answer;
     }
 
-    boolean isAnswerEnabled(Interval answer) {
-      return enabledAnswers.contains(answer);
+    void play(SequencePlayer player) throws UnavailableException {
+      player.play(prompt);
+    }
+
+    boolean isCorrect(Interval answer) {
+      return this.answer == answer;
+    }
+  }
+
+  static class AnswerChoices {
+    private final EnumSet<Interval> enabledAnswers;
+    private final Map<Interval, ChangeListener> enabledAnswerListeners;
+
+    AnswerChoices() {
+      this.enabledAnswers = EnumSet.allOf(Interval.class);
+      this.enabledAnswerListeners = new HashMap<Interval, ChangeListener>();
     }
 
     /**
@@ -172,111 +219,105 @@ public class EarTrainer {
       this.enabledAnswerListeners.put(interval, newValue);
     }
 
-    void nextQuestion() throws UnavailableException {
-      this.question = chooser.choose();
-      for (Interval answerToEnable : EnumSet.complementOf(enabledAnswers)) {
+    public void disable(Interval answer) {
+      enabledAnswers.remove(answer);
+      enabledAnswerListeners.get(answer).stateChanged(new ChangeEvent(this));
+    }
+
+    void resetAllToEnabled() {
+      for (Interval answerToEnable : Interval.values()) {
         enabledAnswers.add(answerToEnable);
         enabledAnswerListeners.get(answerToEnable).stateChanged(new ChangeEvent(this));
       }
-      playQuestion();
     }
 
-    void playQuestion() throws UnavailableException {
-      question.play(player);
+    public List<Interval> getAnswersToChooseFrom() {
+      return new ArrayList<Interval>(enabledAnswers);
     }
 
-    void chooseAnswer(Interval answer) throws UnavailableException {
-      if (question.matches(answer)) {
-        nextQuestion();
-      } else {
-        enabledAnswers.remove(answer);
-        enabledAnswerListeners.get(answer).stateChanged(new ChangeEvent(this));
-        playQuestion();
-      }
-    }
-  }
-
-  enum Interval {
-    Unison(0),
-    MinorSecond(1),
-    MajorSecond(2),
-    MinorThird(3),
-    MajorThird(4),
-    PerfectFourth(5),
-    Tritone(6),
-    PerfectFifth(7),
-    MinorSixth(8),
-    MajorSixth(9),
-    MinorSeventh(10),
-    MajorSeventh(11),
-    Octave(12)
-    ;
-
-    private final int semitones;
-
-    Interval(int semitones) {
-      this.semitones = semitones;
-    }
-
-    boolean isBlackKey() {
-      return this==Tritone || name().startsWith("Minor");
-    }
-  }
-
-  static class Question {
-    private final Interval interval;
-    private final Sequence sequence;
-
-    Question(Interval interval, Sequence sequence) {
-      this.interval = interval;
-      this.sequence = sequence;
-    }
-
-    void play(SequencePlayer player) throws UnavailableException {
-      player.play(sequence);
-    }
-
-    boolean matches(Interval otherInterval) {
-      return interval == otherInterval;
-    }
-
-    @Override
-    public String toString() {
-      return interval.toString();
+    boolean isAnswerEnabled(Interval answer) {
+      return enabledAnswers.contains(answer);
     }
   }
 
   static class QuestionChooser {
-    private final Random random;
+    private AnswerChoices choices;
+    private final Random randomness;
 
-    QuestionChooser(Random random) {
-      this.random = random;
+    QuestionChooser(AnswerChoices choices, Random randomness) {
+      this.choices = choices;
+      this.randomness = randomness;
     }
 
-    Question choose() throws UnavailableException {
-      Interval interval = chooseRandomInterval();
-      Sequence sequence = chooseRandomSequence(interval);
-      return new Question(interval, sequence);
+    Question chooseQuestion() throws UnavailableException {
+      Interval answer = chooseRandomAnswer();
+      Sequence prompt = chooseRandomSequence(answer);
+      return new Question(prompt, answer);
     }
 
-    private Interval chooseRandomInterval() {
-      Interval[] choices = Interval.values();
-      return choices[random.nextInt(choices.length)];
+    private Interval chooseRandomAnswer() {
+      List<Interval> answers = choices.getAnswersToChooseFrom();
+      return answers.get(randomness.nextInt(answers.size()));
     }
 
     private Sequence chooseRandomSequence(Interval interval) throws UnavailableException {
       SequenceBuilder builder = new SequenceBuilder();
-      builder.addNote(chooseRandomNote());
-      builder.addNote(interval, chooseRandomDirection());
+      int firstNote = chooseRandomNote();
+      builder.addNote(firstNote);
+      if (chooseRandomDirection()) {
+        builder.addNote(interval.addToNote(firstNote));
+      } else {
+        builder.addNote(interval.subtractFromNote(firstNote));
+      }
       return builder.getSequence();
     }
 
     private int chooseRandomNote() {
-      return random.nextInt(HIGHEST_START - LOWEST_START + 1) + LOWEST_START;
+      int noteCount = HIGHEST_STARTING_NOTE - LOWEST_STARTING_NOTE + 1;
+      return randomness.nextInt(noteCount) + LOWEST_STARTING_NOTE;
     }
 
     private boolean chooseRandomDirection() {
-      return random.nextBoolean();
+      return randomness.nextBoolean();
+    }
+  }
+
+
+  static class Quizzer {
+    private final QuestionChooser chooser;
+    private final AnswerChoices choices;
+    private final SequencePlayer player;
+    private Question currentQuestion;
+    private ChangeListener answerChosenListener;
+
+    Quizzer(QuestionChooser chooser, AnswerChoices choices, SequencePlayer player) {
+      this.chooser = chooser;
+      this.choices = choices;
+      this.player = player;
+    }
+  
+    public void setAnswerChosenListener(ChangeListener listener) {
+      this.answerChosenListener = listener;
+    }
+
+    void nextQuestion() throws UnavailableException {
+      currentQuestion = chooser.chooseQuestion();
+      choices.resetAllToEnabled();
+      playQuestion();
+    }
+
+    void playQuestion() throws UnavailableException {
+      currentQuestion.play(player);
+    }
+
+    void chooseAnswer(Interval answer) throws UnavailableException {
+      if (currentQuestion.isCorrect(answer)) {
+        nextQuestion();
+      } else {
+        choices.disable(answer);
+        playQuestion();
+      }
+      answerChosenListener.stateChanged(new ChangeEvent(this));
     }
   }
 
@@ -289,7 +330,6 @@ public class EarTrainer {
     private final Sequence sequence;
     private Track track;
     private int currentBeat = 0;
-    private int lastNote = MIDDLE_C;
 
     SequenceBuilder() throws UnavailableException {
       try {
@@ -317,13 +357,6 @@ public class EarTrainer {
       track.add(new MidiEvent(noteOn, currentBeat));
       track.add(new MidiEvent(noteOff, currentBeat + 1));
       currentBeat += 1;
-      lastNote = note;
-    }
-
-    /** Adds a note relative to the previous one. */
-    void addNote(Interval interval, boolean ascending) throws UnavailableException {
-      int note = ascending ? lastNote + interval.semitones : lastNote - interval.semitones;
-      addNote(note);
     }
 
     Sequence getSequence() {
