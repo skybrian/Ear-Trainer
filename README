@@ -1,0 +1,11 @@
+A simple ear trainer in one Java file.
+
+It's a Swing app that has a button that plays random intervals; nothing fancy.
+TODO: everything else.
+
+It should be easy to understand and modify.
+License: for now, let's say GPLv2. Ask if that doesn't work for you.
+
+Brian Slesinsky
+brian-web@slesinsky.org
+September 19, 2009
