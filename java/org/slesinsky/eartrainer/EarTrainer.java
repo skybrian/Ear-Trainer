@@ -97,6 +97,13 @@ public class EarTrainer {
       }
     };
 
+    SimpleAction skip = new SimpleAction("Skip") {
+      @Override
+      void act() throws UnavailableException {
+        quizzer.startNewQuestion();
+      }
+    };
+
     Box header = Box.createHorizontalBox();
     
     final JLabel questionLabel = new JLabel(quizzer.getQuestionText());
@@ -104,6 +111,7 @@ public class EarTrainer {
     header.add(makeSpacer());
     final JButton playButton = new JButton(play);
     header.add(playButton);
+    header.add(new JButton(skip));
     header.add(Box.createHorizontalGlue());
 
     quizzer.addAnswerChosenListener(new Runnable() {
