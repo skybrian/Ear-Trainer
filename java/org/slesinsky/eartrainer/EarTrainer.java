@@ -14,12 +14,18 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -37,28 +43,15 @@ public class EarTrainer {
     QuestionChooser chooser = new QuestionChooser(new Random());
     Quizzer quizzer = new Quizzer(chooser, player);
 
-    startUI(quizzer);
+    startUI(makePage(quizzer));
     quizzer.nextQuestion();
   }
 
   // ============= Swing UI ===============
 
-  private static void startUI(Quizzer quizzer) {
-
-    Box page = Box.createVerticalBox();
-    page.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-
-    Box header = Box.createHorizontalBox();
-    header.add(new JLabel("Choose the interval matching the notes that you heard."));
-    header.add(new JButton(new PlayAction(quizzer)));
-    page.add(header);
-
-    page.add(Box.createVerticalStrut(16));
-
-    page.add(makeAnswerButtonGrid(quizzer));
-
+  private static void startUI(JComponent content) {
     JFrame frame = new JFrame("Ear Trainer");
-    frame.getContentPane().add(page);
+    frame.getContentPane().add(content);
 
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
@@ -66,23 +59,47 @@ public class EarTrainer {
     frame.setVisible(true);
   }
 
+  private static Box makePage(Quizzer quizzer) {
+    Box page = Box.createVerticalBox();
+    page.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+    Box header = Box.createHorizontalBox();
+    header.add(new JLabel(
+        "What's the difference in pitch between these two notes?"));
+    header.add(Box.createHorizontalStrut(4));
+    header.add(new JButton(new PlayAction(quizzer)));
+    page.add(header);
+
+    page.add(Box.createVerticalStrut(16));
+    page.add(makeAnswerButtonGrid(quizzer));
+
+    return page;
+  }
+
   /**
    * Creates a grid with an answer button for each interval,
    * with buttons corresponding to black keys (ascending from C)
    * on the left.
    */
-  private static JPanel makeAnswerButtonGrid(Quizzer quizzer) {
+  private static JPanel makeAnswerButtonGrid(final Quizzer quizzer) {
     JPanel intervals = new JPanel();
     intervals.setLayout(new GridLayout(8, 2));
 
     boolean isLeftColumn = true;
-    for (Interval interval : Interval.values()) {
+    for (final Interval interval : Interval.values()) {
       if (isLeftColumn && !interval.isBlackKey()) {
         intervals.add(Box.createGlue());        
       } else {
         isLeftColumn = !isLeftColumn;
       }
-      intervals.add(new JButton(new ChooseAnswerAction(quizzer, interval)));
+      final JButton button = new JButton(new ChooseAnswerAction(quizzer, interval));
+      button.setEnabled(quizzer.isAnswerEnabled(interval));
+      quizzer.putEnabledAnswerListener(interval, new ChangeListener() {
+        public void stateChanged(ChangeEvent changeEvent) {
+          button.setEnabled(quizzer.isAnswerEnabled(interval));
+        }
+      });
+      intervals.add(button);
     }
     return intervals;
   }
@@ -92,7 +109,7 @@ public class EarTrainer {
 
     PlayAction(Quizzer quizzer) {
       this.quizzer = quizzer;
-      putValue(Action.NAME, "Play It Again");
+      putValue(Action.NAME, "Play them again");
     }
 
     public void actionPerformed(ActionEvent actionEvent) {
@@ -133,15 +150,34 @@ public class EarTrainer {
   static class Quizzer {
     private final QuestionChooser chooser;
     private final SequencePlayer player;
+    private final EnumSet<Interval> enabledAnswers;
+    private final Map<Interval, ChangeListener> enabledAnswerListeners;
     private Question question;
 
     Quizzer(QuestionChooser chooser, SequencePlayer player) {
       this.chooser = chooser;
       this.player = player;
+      this.enabledAnswers = EnumSet.allOf(Interval.class);
+      this.enabledAnswerListeners = new HashMap<Interval, ChangeListener>();
+    }
+
+    boolean isAnswerEnabled(Interval answer) {
+      return enabledAnswers.contains(answer);
+    }
+
+    /**
+     * Sets the listener to be called when an answer is enabled or disabled.
+     */
+    void putEnabledAnswerListener(Interval interval, ChangeListener newValue) {
+      this.enabledAnswerListeners.put(interval, newValue);
     }
 
     void nextQuestion() throws UnavailableException {
       this.question = chooser.choose();
+      for (Interval answerToEnable : EnumSet.complementOf(enabledAnswers)) {
+        enabledAnswers.add(answerToEnable);
+        enabledAnswerListeners.get(answerToEnable).stateChanged(new ChangeEvent(this));
+      }
       playQuestion();
     }
 
@@ -153,6 +189,8 @@ public class EarTrainer {
       if (question.matches(answer)) {
         nextQuestion();
       } else {
+        enabledAnswers.remove(answer);
+        enabledAnswerListeners.get(answer).stateChanged(new ChangeEvent(this));
         playQuestion();
       }
     }
