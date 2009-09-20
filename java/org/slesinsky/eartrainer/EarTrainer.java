@@ -14,6 +14,7 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -22,6 +23,7 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -48,14 +50,14 @@ public class EarTrainer {
 
     // assembly
     AnswerChoices choices = new AnswerChoices();
-    QuestionChooser chooser = new QuestionChooser(choices, new Random());
+    QuestionChooser chooser = new QuestionChooser(new Random());
     SequencePlayer player = new SequencePlayer();
     Quizzer quizzer = new Quizzer(chooser, choices, player);
 
     JComponent page = makePage(
         makeHeader(quizzer),
         makeAnswerBar(quizzer),
-        makeAnswerButtonGrid(quizzer, choices),
+        makeAnswerButtonGrid(chooser, quizzer, choices),
         makeFooter(chooser));
     JFrame frame = makeWindow(page);
 
@@ -124,6 +126,7 @@ public class EarTrainer {
     });
     box.add(answerLabel);
     box.add(Box.createHorizontalGlue());
+    box.add(Box.createRigidArea(new Dimension(0, 20)));
     return box;
   }
 
@@ -132,7 +135,8 @@ public class EarTrainer {
    * with buttons corresponding to black keys (ascending from C)
    * on the left.
    */
-  private static JPanel makeAnswerButtonGrid(final Quizzer quizzer, final AnswerChoices choices) {
+  private static JPanel makeAnswerButtonGrid(QuestionChooser chooser, Quizzer quizzer,
+      AnswerChoices choices) {
     JPanel intervals = new JPanel();
     intervals.setLayout(new GridLayout(8, 2));
 
@@ -143,30 +147,43 @@ public class EarTrainer {
       } else {
         isLeftColumn = !isLeftColumn;
       }
-      intervals.add(makeAnswerButton(quizzer, choices, interval));
+      intervals.add(makeAnswerCell(interval, chooser, quizzer, choices));
     }
     return intervals;
   }
 
-  private static JButton makeAnswerButton(final Quizzer quizzer, final AnswerChoices choices,
-      final Interval interval) {
+  private static JComponent makeAnswerCell(final Interval interval, final QuestionChooser chooser,
+      final Quizzer quizzer, final AnswerChoices choices) {
 
-    final JButton button = new JButton(new SimpleAction(interval.getName()) {
+    JCheckBox checkBox = new JCheckBox(new AbstractAction() {
+      public void actionPerformed(ActionEvent actionEvent) {
+        JCheckBox box = (JCheckBox) actionEvent.getSource();
+        chooser.setIntervalEnabled(interval, box.isSelected());
+      }
+    });
+    checkBox.setSelected(true);
+
+    final JButton chooseButton = new JButton(new SimpleAction(interval.getName()) {
       @Override
       void act() throws UnavailableException {
         quizzer.chooseAnswer(interval);
       }
     });
-    button.setPreferredSize(new Dimension(150, 40));
+    chooseButton.setPreferredSize(new Dimension(150, 40));
 
-    choices.putEnabledAnswerListener(interval, new Runnable() {
+    choices.putAnswerChangeListener(interval, new Runnable() {
       public void run() {
-        boolean enabled = choices.isAnswerEnabled(interval);
-        button.setEnabled(enabled);
+        boolean enabled = choices.canChooseAnswer(interval);
+        chooseButton.setEnabled(enabled);
       }
     });
 
-    return button;
+    JPanel panel = new JPanel();
+    panel.setLayout(new BorderLayout());
+    panel.add(checkBox, BorderLayout.WEST);
+    panel.add(chooseButton, BorderLayout.CENTER);
+
+    return panel;
   }
 
   private static JComponent makeFooter(final QuestionChooser chooser) {
@@ -265,50 +282,54 @@ public class EarTrainer {
 
   static class AnswerChoices {
     private final EnumSet<Interval> enabledAnswers;
-    private final Map<Interval, Runnable> enabledAnswerListeners;
+    private final EnumSet<Interval> wrongAnswers;
+    private final Map<Interval, Runnable> answerListener;
 
     AnswerChoices() {
       this.enabledAnswers = EnumSet.allOf(Interval.class);
-      this.enabledAnswerListeners = new HashMap<Interval, Runnable>();
+      this.wrongAnswers = EnumSet.noneOf(Interval.class);
+      this.answerListener = new HashMap<Interval, Runnable>();
     }
 
-    /**
-     * Sets the listener to be called when an answer is enabled or disabled.
-     */
-    void putEnabledAnswerListener(Interval interval, Runnable newValue) {
-      this.enabledAnswerListeners.put(interval, newValue);
+    void putAnswerChangeListener(Interval interval, Runnable listener) {
+      this.answerListener.put(interval, listener);
     }
 
-    public void disable(Interval answer) {
-      enabledAnswers.remove(answer);
-      enabledAnswerListeners.get(answer).run();
+    public void addWrongAnswer(Interval answer) {
+      wrongAnswers.add(answer);
+      answerListener.get(answer).run();
     }
 
-    void resetAllToEnabled() {
-      for (Interval answerToEnable : Interval.values()) {
-        enabledAnswers.add(answerToEnable);
-        enabledAnswerListeners.get(answerToEnable).run();
+    void clearWrongAnswers() {
+      for (Interval answer : Interval.values()) {
+        wrongAnswers.remove(answer);
+        answerListener.get(answer).run();
       }
     }
 
-    public List<Interval> getAnswersToChooseFrom() {
-      return new ArrayList<Interval>(enabledAnswers);
-    }
-
-    boolean isAnswerEnabled(Interval answer) {
-      return enabledAnswers.contains(answer);
+    boolean canChooseAnswer(Interval answer) {
+      return enabledAnswers.contains(answer) && !wrongAnswers.contains(answer);
     }
   }
 
   static class QuestionChooser {
-    private final AnswerChoices choices;
     private final Random randomness;
+
+    private final EnumSet<Interval> choices;
     private int noteCount;
 
-    QuestionChooser(AnswerChoices choices, Random randomness) {
-      this.choices = choices;
+    QuestionChooser(Random randomness) {
       this.randomness = randomness;
+      this.choices = EnumSet.allOf(Interval.class);
       this.noteCount = 2;
+    }
+
+    void setIntervalEnabled(Interval choice, boolean newValue) {
+      if (newValue) {
+        choices.add(choice);
+      } else {
+        choices.remove(choice);
+      }
     }
 
     void setNoteCount(int newValue) {
@@ -316,19 +337,22 @@ public class EarTrainer {
     }
 
     Question chooseQuestion() throws UnavailableException {
-      List<Interval> answers = chooseRandomAnswers();
+      List<Interval> answers = chooseRandomIntervals();
       Sequence prompt = chooseRandomSequence(answers);
       return new Question(prompt, answers);
     }
 
-    private List<Interval> chooseRandomAnswers() {
-      List<Interval> answers = choices.getAnswersToChooseFrom();
-
+    private List<Interval> chooseRandomIntervals() {
       List<Interval> result = new ArrayList<Interval>();
       for (int i = 0; i < noteCount - 1; i++) {
-        result.add(answers.get(randomness.nextInt(answers.size())));
+        result.add(chooseRandomInterval());
       }
       return result;
+    }
+
+    private Interval chooseRandomInterval() {
+      List<Interval> answers = new ArrayList<Interval>(choices);
+      return answers.get(randomness.nextInt(answers.size()));
     }
 
     private Sequence chooseRandomSequence(List<Interval> intervals) throws UnavailableException {
@@ -379,7 +403,7 @@ public class EarTrainer {
 
     void startNewQuestion() throws UnavailableException {
       currentQuestion = chooser.chooseQuestion();
-      choices.resetAllToEnabled();
+      choices.clearWrongAnswers();
       chosenAnswers.clear();
       playQuestionNotes();
     }
@@ -400,13 +424,13 @@ public class EarTrainer {
 
     void chooseAnswer(Interval answer) throws UnavailableException {
       if (currentQuestion.isCorrect(answer, chosenAnswers.size())) {
-        choices.resetAllToEnabled();
+        choices.clearWrongAnswers();
         chosenAnswers.add(answer);
         if (chosenAnswers.size() >= currentQuestion.getAnswerCount()) {
           startNewQuestion();
         }
       } else {
-        choices.disable(answer);
+        choices.addWrongAnswer(answer);
         playQuestionNotes();
       }
       for (Runnable listener : answerChosenListeners) {
@@ -482,10 +506,15 @@ public class EarTrainer {
 
     void play(Sequence sequence) throws UnavailableException {
       try {
+        Profiler p = new Profiler();
         sequencer.stop();
+        p.log("stopped sequencer");
         sequencer.setSequence(sequence);
+        p.log("set sequence");
         sequencer.setMicrosecondPosition(0);
+        p.log("set position");
         sequencer.start();
+        p.log("started sequencer");
       } catch (InvalidMidiDataException e) {
         throw new UnavailableException(e);
       }
@@ -497,6 +526,19 @@ public class EarTrainer {
   static class UnavailableException extends Exception {
     UnavailableException(Throwable throwable) {
       super(throwable);
+    }
+  }
+
+  static class Profiler {
+    private final long startTime;
+    Profiler() {
+      startTime = System.currentTimeMillis();
+    }
+    public void log(String message) {
+      long elapsed = System.currentTimeMillis() - startTime;
+      if (elapsed >= 10) {
+        System.out.println(elapsed + ": " + message);
+      }
     }
   }
 }
