@@ -37,13 +37,20 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * A swing app that plays a random interval and waits for the user to press the button
- * with the interval's name.
+ * A Swing app that quizzes the user to identify each interval in a random phrase.
+ * The user can choose the length of the phrase and the intervals that might appear 
+ * in it.
  */
 public class EarTrainer {
+
   private static final int MIDDLE_C = 60;
-  private static final int LOWEST_STARTING_NOTE = Interval.Octave.subtractFromNote(MIDDLE_C);
-  private static final int HIGHEST_STARTING_NOTE = Interval.Octave.addToNote(MIDDLE_C);
+  private static final int LOWEST_STARTING_NOTE = Interval.Octave.upFrom(MIDDLE_C);
+  private static final int HIGHEST_STARTING_NOTE = Interval.Octave.downFrom(MIDDLE_C);
+
+  private static final EnumSet<Interval> DEFAULT_INTERVALS_IN_PHRASE =
+      EnumSet.of(Interval.Minor_Second, Interval.Major_Second);
+  private static final int DEFAULT_NOTES_IN_PHRASE = 2;
+
   private static final int BEATS_PER_MINUTE = 80;
 
   public static void main(String[] args) throws UnavailableException {
@@ -255,11 +262,11 @@ public class EarTrainer {
       return this==Tritone || name().startsWith("Minor");
     }
 
-    private int addToNote(int note) {
+    private int downFrom(int note) {
       return note + ordinal();
     }
 
-    private int subtractFromNote(int note) {
+    private int upFrom(int note) {
       return note - ordinal();
     }
   }
@@ -285,11 +292,11 @@ public class EarTrainer {
       return this.answers.get(position) == answer;
     }
 
-    public int getAnswerCount() {
+   int getAnswerCount() {
       return answers.size();
     }
 
-    public EnumSet<Interval> getChoices() {
+    EnumSet<Interval> getChoices() {
       return choices;
     }
   }
@@ -320,7 +327,7 @@ public class EarTrainer {
       }
     }
 
-    public void addWrongAnswer(Interval answer) {
+    void addWrongAnswer(Interval answer) {
       wrongAnswers.add(answer);
       answerListeners.get(answer).run();
     }
@@ -338,8 +345,8 @@ public class EarTrainer {
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
-      this.choices = EnumSet.of(Interval.Minor_Second, Interval.Major_Second);
-      this.noteCount = 2;
+      this.choices = DEFAULT_INTERVALS_IN_PHRASE;
+      this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
 
     void setEnabled(Interval choice, boolean newValue) {
@@ -350,12 +357,8 @@ public class EarTrainer {
       }
     }
 
-    public boolean isEnabled(Interval interval) {
+    boolean isEnabled(Interval interval) {
       return choices.contains(interval);
-    }
-
-    public EnumSet<Interval> getEnabledIntervals() {
-      return choices.clone();
     }
 
     void setNoteCount(int newValue) {
@@ -389,9 +392,9 @@ public class EarTrainer {
       for (Interval interval : intervals) {
         int nextNote;
         if (chooseRandomDirection()) {
-          nextNote = interval.addToNote(note);
+          nextNote = interval.downFrom(note);
         } else {
-          nextNote = interval.subtractFromNote(note);
+          nextNote = interval.upFrom(note);
         }
         builder.addNote(nextNote);
         note = nextNote;
@@ -464,7 +467,7 @@ public class EarTrainer {
       }
     }
 
-    public String getChosenAnswers() {
+    String getChosenAnswers() {
       StringBuilder result = new StringBuilder();
       for (Interval answer : chosenAnswers) {
         result.append(answer.getName());
@@ -560,7 +563,7 @@ public class EarTrainer {
     Profiler() {
       startTime = System.currentTimeMillis();
     }
-    public void log(String message) {
+    void log(String message) {
       long elapsed = System.currentTimeMillis() - startTime;
       if (elapsed >= 10) {
         System.out.println(elapsed + ": " + message);
