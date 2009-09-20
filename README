@@ -1,11 +1,20 @@
 A simple ear trainer in one Java file.
 
-It's a Swing app that has a button that plays random intervals; nothing fancy.
-TODO: everything else.
+It quizzes the user by playing a random musical phrase and the user has
+to name the intervals between each two notes in the phrase. You can
+select which intervals it will pick from and the number of notes in
+the phrase.
 
-It should be easy to understand and modify.
+You can run it as either a standalone Swing app or as an applet in your
+browser. The Swing app tends to run better.
+
+I recommend increasing the difficulty by gradually adding more intervals.
+Going from two notes to three seems to be significantly harder, so go
+back to a small number of intervals again.
+
+It should be fairly easy to understand and modify.
 License: for now, let's say GPLv2. Ask if that doesn't work for you.
 
 Brian Slesinsky
 brian-web@slesinsky.org
-September 19, 2009
+September 20, 2009
