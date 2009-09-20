@@ -166,10 +166,10 @@ public class EarTrainer {
     JCheckBox checkBox = new JCheckBox(new AbstractAction() {
       public void actionPerformed(ActionEvent actionEvent) {
         JCheckBox box = (JCheckBox) actionEvent.getSource();
-        chooser.setIntervalEnabled(interval, box.isSelected());
+        chooser.setEnabled(interval, box.isSelected());
       }
     });
-    checkBox.setSelected(true);
+    checkBox.setSelected(chooser.isEnabled(interval));
 
     final JButton chooseButton = new JButton(new SimpleAction(interval.getName()) {
       @Override
@@ -268,10 +268,12 @@ public class EarTrainer {
 
   static class Question {
     private final Sequence prompt;
+    private final EnumSet<Interval> choices;
     private final List<Interval> answers;
 
-    Question(Sequence prompt, List<Interval> answers) {
+    Question(Sequence prompt, EnumSet<Interval> choices, List<Interval> answers) {
       this.prompt = prompt;
+      this.choices = choices;
       this.answers = answers;
     }
 
@@ -286,33 +288,41 @@ public class EarTrainer {
     public int getAnswerCount() {
       return answers.size();
     }
+
+    public EnumSet<Interval> getChoices() {
+      return choices;
+    }
   }
 
   static class AnswerChoices {
     private final EnumSet<Interval> enabledAnswers;
     private final EnumSet<Interval> wrongAnswers;
-    private final Map<Interval, Runnable> answerListener;
+    private final Map<Interval, Runnable> answerListeners;
 
     AnswerChoices() {
-      this.enabledAnswers = EnumSet.allOf(Interval.class);
+      this.enabledAnswers = EnumSet.noneOf(Interval.class);
       this.wrongAnswers = EnumSet.noneOf(Interval.class);
-      this.answerListener = new HashMap<Interval, Runnable>();
+      this.answerListeners = new HashMap<Interval, Runnable>();
     }
 
     void putAnswerChangeListener(Interval interval, Runnable listener) {
-      this.answerListener.put(interval, listener);
+      this.answerListeners.put(interval, listener);
+    }
+
+    void startNewInterval(EnumSet<Interval> choices) {
+      enabledAnswers.clear();
+      for (Interval answer : Interval.values()) {
+        if (choices.contains(answer)) {
+          enabledAnswers.add(answer);
+        }
+        wrongAnswers.remove(answer);
+        answerListeners.get(answer).run();
+      }
     }
 
     public void addWrongAnswer(Interval answer) {
       wrongAnswers.add(answer);
-      answerListener.get(answer).run();
-    }
-
-    void clearWrongAnswers() {
-      for (Interval answer : Interval.values()) {
-        wrongAnswers.remove(answer);
-        answerListener.get(answer).run();
-      }
+      answerListeners.get(answer).run();
     }
 
     boolean canChooseAnswer(Interval answer) {
@@ -328,16 +338,24 @@ public class EarTrainer {
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
-      this.choices = EnumSet.allOf(Interval.class);
+      this.choices = EnumSet.of(Interval.Minor_Second, Interval.Major_Second);
       this.noteCount = 2;
     }
 
-    void setIntervalEnabled(Interval choice, boolean newValue) {
+    void setEnabled(Interval choice, boolean newValue) {
       if (newValue) {
         choices.add(choice);
       } else {
         choices.remove(choice);
       }
+    }
+
+    public boolean isEnabled(Interval interval) {
+      return choices.contains(interval);
+    }
+
+    public EnumSet<Interval> getEnabledIntervals() {
+      return choices.clone();
     }
 
     void setNoteCount(int newValue) {
@@ -347,7 +365,7 @@ public class EarTrainer {
     Question chooseQuestion() throws UnavailableException {
       List<Interval> answers = chooseRandomIntervals();
       Sequence prompt = chooseRandomSequence(answers);
-      return new Question(prompt, answers);
+      return new Question(prompt, choices.clone(), answers);
     }
 
     private List<Interval> chooseRandomIntervals() {
@@ -411,7 +429,7 @@ public class EarTrainer {
 
     void startNewQuestion() throws UnavailableException {
       currentQuestion = chooser.chooseQuestion();
-      choices.clearWrongAnswers();
+      choices.startNewInterval(currentQuestion.getChoices());
       chosenAnswers.clear();
       playQuestionNotes();
     }
@@ -432,7 +450,7 @@ public class EarTrainer {
 
     void chooseAnswer(Interval answer) throws UnavailableException {
       if (currentQuestion.isCorrect(answer, chosenAnswers.size())) {
-        choices.clearWrongAnswers();
+        choices.startNewInterval(currentQuestion.getChoices());
         chosenAnswers.add(answer);
         if (chosenAnswers.size() >= currentQuestion.getAnswerCount()) {
           startNewQuestion();
