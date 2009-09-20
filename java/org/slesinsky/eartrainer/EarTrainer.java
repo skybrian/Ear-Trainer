@@ -24,6 +24,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -53,27 +54,55 @@ public class EarTrainer {
 
   private static final int BEATS_PER_MINUTE = 80;
 
-  public static void main(String[] args) throws UnavailableException {
+  private static final Color BACKGROUND_COLOR = Color.WHITE;
 
-    // assembly
+  public static void main(String[] args) throws UnavailableException {
+    App app = makeApp();
+    JFrame frame = makeWindow(app.getPage());
+    frame.setVisible(true);
+    app.start();
+  }
+
+  // ============= Swing UI ===============
+
+  public static App makeApp() throws UnavailableException {
     AnswerChoices choices = new AnswerChoices();
     QuestionChooser chooser = new QuestionChooser(new Random());
     SequencePlayer player = new SequencePlayer();
     Quizzer quizzer = new Quizzer(chooser, choices, player);
-
     JComponent page = makePage(
-        makeHeader(quizzer),
-        makeAnswerBar(quizzer),
-        makeAnswerButtonGrid(chooser, quizzer, choices),
-        makeFooter(chooser));
-    JFrame frame = makeWindow(page);
-
-    // startup
-    frame.setVisible(true);
-    quizzer.startNewQuestion();
+      makeHeader(quizzer),
+      makeAnswerBar(quizzer),
+      makeAnswerButtonGrid(chooser, quizzer, choices),
+      makeFooter(chooser));
+    return new App(page, quizzer, player);
   }
 
-  // ============= Swing UI ===============
+  public static class App {
+    private final JComponent page;
+    private final Quizzer quizzer;
+    private final SequencePlayer player;
+
+    App(JComponent page, Quizzer quizzer, SequencePlayer player) {
+      this.page = page;
+      this.quizzer = quizzer;
+      this.player = player;
+    }
+
+    public JComponent getPage() {
+      return page;
+    }
+
+    public void start() throws UnavailableException {
+      if (!quizzer.isStarted()) {
+        quizzer.startNewQuestion();
+      }
+    }
+
+    public void shutdown() {
+      player.shutdown();
+    }
+  }
 
   private static JFrame makeWindow(JComponent content) {
     JFrame frame = new JFrame("Ear Trainer");
@@ -87,6 +116,7 @@ public class EarTrainer {
   private static JComponent makePage(JComponent... sections) {
     Box page = Box.createVerticalBox();
     page.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+    page.setBackground(BACKGROUND_COLOR);
     for (int i = 0; i < sections.length; i++) {
       page.add(sections[i]);
       if (i < sections.length - 1) {
@@ -153,6 +183,7 @@ public class EarTrainer {
   private static JPanel makeAnswerButtonGrid(QuestionChooser chooser, Quizzer quizzer,
       AnswerChoices choices) {
     JPanel intervals = new JPanel();
+    intervals.setBackground(BACKGROUND_COLOR);
     intervals.setLayout(new GridLayout(8, 2));
 
     boolean isLeftColumn = true;
@@ -194,6 +225,7 @@ public class EarTrainer {
     });
 
     JPanel panel = new JPanel();
+    panel.setBackground(BACKGROUND_COLOR);
     panel.setLayout(new BorderLayout());
     panel.add(checkBox, BorderLayout.WEST);
     panel.add(chooseButton, BorderLayout.CENTER);
@@ -430,6 +462,10 @@ public class EarTrainer {
       this.answerChosenListeners = new ArrayList<Runnable>();
     }
 
+    public boolean isStarted() {
+      return currentQuestion != null;
+    }
+
     void startNewQuestion() throws UnavailableException {
       currentQuestion = chooser.chooseQuestion();
       choices.startNewInterval(currentQuestion.getChoices());
@@ -548,11 +584,15 @@ public class EarTrainer {
         throw new UnavailableException(e);
       }
     }
+
+    public void shutdown() {
+      sequencer.stop();
+    }
   }
 
   // ====== Generic Utilities =======
 
-  static class UnavailableException extends Exception {
+  public static class UnavailableException extends Exception {
     UnavailableException(Throwable throwable) {
       super(throwable);
     }

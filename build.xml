@@ -1,0 +1,37 @@
+<project name="MyProject" default="build" basedir=".">
+
+  <property name="classdir" value="out/production/eartrainer"/>
+  <property name="webdir" value="web"/>
+  <property name="appletclass"
+            value="${classdir}/EarTrainerApplet.class"/>
+
+  <target name="build" depends="compile, update_applet">
+  </target>
+
+  <target name="compile">
+    <delete dir="${classdir}"/>
+    <mkdir dir="${classdir}"/>
+    <javac srcdir="java" destdir="${classdir}">
+    </javac>
+  </target>
+
+  <target name="run" depends="compile" description="runs the Swing app">
+    <java fork="true" classname="org.slesinsky.eartrainer.EarTrainer"
+            classpath="${classdir}"/>
+  </target>
+
+  <target name="update_applet"
+          description="sets up the web directory so that you can run the applet">
+    <jar destfile="${webdir}/eartrainer.jar"
+         basedir="${classdir}"
+         excludes="*Applet.class"/>
+    <copy file="${appletclass}" tofile="${webdir}/EarTrainerApplet.class"/>  
+  </target>
+
+  <target name="clean">
+    <delete dir="${classdir}"/>
+    <delete file="${webdir}/EarTrainerApplet.class"/>
+    <delete file="${webdir}/eartrainer.jar"/>
+  </target>
+
+</project>
