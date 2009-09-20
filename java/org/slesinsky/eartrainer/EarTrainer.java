@@ -13,29 +13,23 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.Random;
-import java.util.EnumSet;
-import java.util.Collections;
-import java.util.Arrays;
 
 /**
- * TODO: javadoc
+ * A swing app that plays a random interval when the button is pressed.
  */
 public class EarTrainer {
   private static final int MIDDLE_C = 60;
+  private static final int BEATS_PER_MINUTE = 90;
 
   public static void main(String[] args) throws Exception {
     SequencePlayer player = new SequencePlayer();
-    SequenceChooser chooser = new SequenceChooser();
+    IntervalChooser chooser = new IntervalChooser(new Random());
 
     JFrame frame = new JFrame("Ear Trainer");
-
-    JButton playButton = new JButton();
-    playButton.setAction(new PlayAction(player, chooser));
-    frame.getContentPane().add(playButton);
+    frame.getContentPane().add(new JButton(new PlayAction(player, chooser)));
 
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
-
     frame.setLocation(100, 10);
     frame.setVisible(true);
   }
@@ -65,9 +59,9 @@ public class EarTrainer {
 
   static class PlayAction extends AbstractAction {
     private final SequencePlayer player;
-    private final SequenceChooser chooser;
+    private final IntervalChooser chooser;
 
-    public PlayAction(SequencePlayer player, SequenceChooser chooser) {
+    PlayAction(SequencePlayer player, IntervalChooser chooser) {
       this.player = player;
       this.chooser = chooser;
       putValue(Action.NAME, "Play");
@@ -75,7 +69,9 @@ public class EarTrainer {
 
     public void actionPerformed(ActionEvent actionEvent) {
       try {
-        player.play(chooser.makeSequence());
+        PlayableInterval interval = chooser.choose();
+        interval.play(player);
+        System.out.println(interval);
       } catch (Exception e) {
         reportError(e);
       }
@@ -87,31 +83,55 @@ public class EarTrainer {
     }
   }
 
-  static class SequenceChooser {
+  static class PlayableInterval {
+    private final Interval interval;
+    private final Sequence sequence;
+
+    PlayableInterval(Interval interval, Sequence sequence) {
+      this.interval = interval;
+      this.sequence = sequence;
+    }
+
+    void play(SequencePlayer player) throws InvalidMidiDataException {
+      player.play(sequence);
+    }
+
+    @Override
+    public String toString() {
+      return interval.toString();
+    }
+  }
+
+  static class IntervalChooser {
     private static int LOWEST_START = MIDDLE_C - Interval.Octave.semitones;
     private static int HIGHEST_START = MIDDLE_C + Interval.Octave.semitones;
 
     private Random random;
 
-    SequenceChooser() {
-      this.random = new Random();
+    IntervalChooser(Random random) throws InvalidMidiDataException {
+      this.random = random;
     }
 
-    public Sequence makeSequence() throws InvalidMidiDataException {
-      SequenceBuilder builder = new SequenceBuilder();
-
-      builder.addNote(chooseRandomNote(), 1);
-      builder.addInterval(chooseRandomInterval(), chooseRandomDirection());
-      return builder.getSequence();
-    }
-
-    private int chooseRandomNote() {
-      return random.nextInt(HIGHEST_START - LOWEST_START + 1) + LOWEST_START;
+    PlayableInterval choose() throws InvalidMidiDataException {
+      Interval interval = chooseRandomInterval();
+      Sequence sequence = chooseRandomSequence(interval);
+      return new PlayableInterval(interval, sequence);
     }
 
     private Interval chooseRandomInterval() {
       Interval[] choices = Interval.values();
       return choices[random.nextInt(choices.length)];
+    }
+
+    private Sequence chooseRandomSequence(Interval interval) throws InvalidMidiDataException {
+      SequenceBuilder builder = new SequenceBuilder();
+      builder.addNote(chooseRandomNote(), 1);
+      builder.addNote(interval, chooseRandomDirection(), 1);
+      return builder.getSequence();
+    }
+
+    private int chooseRandomNote() {
+      return random.nextInt(HIGHEST_START - LOWEST_START + 1) + LOWEST_START;
     }
 
     private boolean chooseRandomDirection() {
@@ -133,17 +153,6 @@ public class EarTrainer {
       this.track = sequence.createTrack();
     }
 
-    void addQuarterNotes(int... notes) throws InvalidMidiDataException {
-      for (int note : notes) {
-        addNote(note, 1);
-      }
-    }
-
-    void addInterval(Interval interval, boolean ascending) throws InvalidMidiDataException {
-      int note = ascending ? lastNote + interval.semitones : lastNote - interval.semitones;
-      addNote(note, 1);
-    }
-
     void addNote(int note, int beats) throws InvalidMidiDataException {
       ShortMessage noteOn = new ShortMessage();
       noteOn.setMessage(ShortMessage.NOTE_ON, CHANNEL, note, VELOCITY);
@@ -157,6 +166,12 @@ public class EarTrainer {
       lastNote = note;
     }
 
+    /** Adds a note relative to the previous one. */
+    void addNote(Interval interval, boolean ascending, int beats) throws InvalidMidiDataException {
+      int note = ascending ? lastNote + interval.semitones : lastNote - interval.semitones;
+      addNote(note, beats);
+    }
+
     Sequence getSequence() {
       return sequence;
     }
@@ -168,7 +183,7 @@ public class EarTrainer {
     SequencePlayer() throws MidiUnavailableException {
       sequencer = MidiSystem.getSequencer();
       sequencer.open();
-      sequencer.setTempoInBPM(90);
+      sequencer.setTempoInBPM(BEATS_PER_MINUTE);
     }
 
     void play(Sequence sequence) throws InvalidMidiDataException {
