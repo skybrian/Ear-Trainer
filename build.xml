@@ -24,7 +24,11 @@
           description="sets up the web directory so that you can run the applet">
     <jar destfile="${webdir}/eartrainer.jar"
          basedir="${classdir}"
-         excludes="*Applet.class"/>
+         excludes="*Applet.class">
+      <manifest>
+        <attribute name="Main-Class" value="org.slesinsky.eartrainer.EarTrainer"/> 
+      </manifest>
+    </jar>
     <copy file="${appletclass}" tofile="${webdir}/EarTrainerApplet.class"/>  
   </target>
 

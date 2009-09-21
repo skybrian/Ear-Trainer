@@ -49,7 +49,7 @@ public class EarTrainer {
   private static final int HIGHEST_STARTING_NOTE = Interval.Octave.downFrom(MIDDLE_C);
 
   private static final EnumSet<Interval> DEFAULT_INTERVALS_IN_PHRASE =
-      EnumSet.of(Interval.Minor_Second, Interval.Major_Second);
+      EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth);
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
 
   private static final int BEATS_PER_MINUTE = 80;

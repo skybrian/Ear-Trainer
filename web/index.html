@@ -1,24 +1,45 @@
 <html>
 <head>
-    <title>Ear Trainer Applet</title>
+    <title>Brian's Ear Trainer Applet</title>
     <script src="applet-fu.js" type="text/javascript"></script>
 </head>
 <body>
 
-<h1>Ear Trainer Applet</h1>
+<h1>Brian's Ear Trainer Applet</h1>
 
 <script type='text/javascript'>
 
 applet_fu.run(
   {'width':'800','height':'600'},
   {
-    'archive':'eartrainer.jar',
-    'code':'EarTrainerApplet.class'
+    'code':'EarTrainerApplet.class',
+    'archive':'eartrainer.jar'
   },
   '1.5',
   'Sorry, this applet doesn\'t work in your browser.'
 );
 
 </script>
+
+<p>Directions: you should have heard two notes. (If you missed them, press the
+"Play it again" button to repeat them.) Press the button that corresponds
+to the difference in pitch between the notes (this is an interval). If you
+get it right, two more notes will be played. Otherwise, it will repeat
+the same notes and you can try again with one fewer intervals to pick from.
+Or press "Skip" to give up on this one.</p>
+
+<p>To increase the difficulty, gradually add more choices using the
+checkboxes. When you can get all of them, increase the number of
+notes, and it will play a random melody where you have to name the
+interval between each two notes. It takes practice, but if you try it a
+little each day, you should gradually get better.</p>
+
+<p>
+<a href="http://en.wikipedia.org/wiki/Ear_training"
+>Read more about ear training</a> |
+<a href="eartrainer.jar">download standalone Java app</a> |
+<a href="http://github.com/skybrian/Ear-Trainer"
+>get source code</a></p>
+
 </body>
 </html>
