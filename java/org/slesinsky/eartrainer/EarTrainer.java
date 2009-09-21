@@ -31,11 +31,13 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * A Swing app that quizzes the user to identify each interval in a random phrase.
@@ -48,8 +50,9 @@ public class EarTrainer {
   private static final int LOWEST_STARTING_NOTE = Interval.Octave.upFrom(MIDDLE_C);
   private static final int HIGHEST_STARTING_NOTE = Interval.Octave.downFrom(MIDDLE_C);
 
-  private static final EnumSet<Interval> DEFAULT_INTERVALS_IN_PHRASE =
-      EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth);
+  private static final Set<Interval> DEFAULT_INTERVALS_IN_PHRASE =
+      Collections.unmodifiableSet(
+          EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth));
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
 
   private static final int BEATS_PER_MINUTE = 80;
@@ -377,7 +380,7 @@ public class EarTrainer {
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
-      this.choices = DEFAULT_INTERVALS_IN_PHRASE;
+      this.choices = EnumSet.copyOf(DEFAULT_INTERVALS_IN_PHRASE);
       this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
 
