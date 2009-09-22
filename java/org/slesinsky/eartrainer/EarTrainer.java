@@ -109,6 +109,7 @@ public class EarTrainer {
 
   private static JFrame makeWindow(JComponent content) {
     JFrame frame = new JFrame("Ear Trainer");
+    frame.getContentPane().setBackground(BACKGROUND_COLOR);
     frame.getContentPane().add(content);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
@@ -590,6 +591,7 @@ public class EarTrainer {
 
     public void shutdown() {
       sequencer.stop();
+      sequencer.close(); // kills background thread
     }
   }
 
