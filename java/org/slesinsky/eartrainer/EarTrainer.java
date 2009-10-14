@@ -47,8 +47,10 @@ import java.util.Set;
 public class EarTrainer {
 
   private static final int MIDDLE_C = 60;
-  private static final int LOWEST_STARTING_NOTE = Interval.Octave.upFrom(MIDDLE_C);
-  private static final int HIGHEST_STARTING_NOTE = Interval.Octave.downFrom(MIDDLE_C);
+  private static final int LOWEST_NOTE =
+      Interval.Perfect_Fifth.downFrom(Interval.Octave.downFrom(MIDDLE_C));
+  private static final int HIGHEST_NOTE = 
+      Interval.Perfect_Fifth.upFrom(Interval.Octave.upFrom(MIDDLE_C));
 
   private static final Set<Interval> DEFAULT_INTERVALS_IN_PHRASE =
       Collections.unmodifiableSet(
@@ -298,11 +300,11 @@ public class EarTrainer {
       return this==Tritone || name().startsWith("Minor");
     }
 
-    private int downFrom(int note) {
+    private int upFrom(int note) {
       return note + ordinal();
     }
 
-    private int upFrom(int note) {
+    private int downFrom(int note) {
       return note - ordinal();
     }
   }
@@ -426,25 +428,26 @@ public class EarTrainer {
       builder.addNote(note);
 
       for (Interval interval : intervals) {
-        int nextNote;
-        if (chooseRandomDirection()) {
-          nextNote = interval.downFrom(note);
-        } else {
-          nextNote = interval.upFrom(note);
-        }
-        builder.addNote(nextNote);
-        note = nextNote;
+        note = chooseNextNote(note, interval);
+        builder.addNote(note);
       }
       return builder.getSequence();
     }
 
-    private int chooseRandomNote() {
-      int noteCount = HIGHEST_STARTING_NOTE - LOWEST_STARTING_NOTE + 1;
-      return randomness.nextInt(noteCount) + LOWEST_STARTING_NOTE;
+    private int chooseNextNote(int note, Interval interval) {
+      List<Integer> candidates = new ArrayList<Integer>();
+      if (interval.upFrom(note) <= HIGHEST_NOTE) {
+        candidates.add(interval.upFrom(note));
+      }
+      if (interval.downFrom(note) >= LOWEST_NOTE) {
+        candidates.add(interval.downFrom(note));
+      }
+      return candidates.get(randomness.nextInt(candidates.size()));
     }
 
-    private boolean chooseRandomDirection() {
-      return randomness.nextBoolean();
+    private int chooseRandomNote() {
+      int noteCount = HIGHEST_NOTE - LOWEST_NOTE + 1;
+      return randomness.nextInt(noteCount) + LOWEST_NOTE;
     }
   }
 
