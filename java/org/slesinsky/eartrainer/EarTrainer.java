@@ -33,6 +33,7 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,12 +75,13 @@ public class EarTrainer {
     AnswerChoices choices = new AnswerChoices();
     QuestionChooser chooser = new QuestionChooser(new Random());
     SequencePlayer player = new SequencePlayer();
-    Quizzer quizzer = new Quizzer(chooser, choices, player);
+    ScoreKeeper scoreKeeper = new ScoreKeeper();
+    Quizzer quizzer = new Quizzer(chooser, choices, player, scoreKeeper);
     JComponent page = makePage(
       makeHeader(quizzer),
       makeAnswerBar(quizzer),
       makeAnswerButtonGrid(chooser, quizzer, choices),
-      makeFooter(chooser));
+      makeFooter(chooser, scoreKeeper));
     return new App(page, quizzer, player);
   }
 
@@ -239,7 +241,7 @@ public class EarTrainer {
     return panel;
   }
 
-  private static JComponent makeFooter(final QuestionChooser chooser) {
+  private static JComponent makeFooter(final QuestionChooser chooser, final ScoreKeeper scoreKeeper) {
     Box footer = Box.createHorizontalBox();
 
     footer.add(new JLabel("Notes in next phrase:"));
@@ -261,6 +263,23 @@ public class EarTrainer {
 
     footer.add(Box.createHorizontalGlue());
 
+    final JButton resetButton = new JButton(new SimpleAction("Reset") {
+      @Override
+      void act() throws UnavailableException {
+        scoreKeeper.reset();
+      }
+    });
+    resetButton.setVisible(false);
+
+    final JLabel scoreBox = new JLabel("");
+    scoreKeeper.addScoreChangeListener(new Runnable() {
+      public void run() {
+        scoreBox.setText(scoreKeeper.getScore());
+        resetButton.setVisible(scoreKeeper.getTotal() > 0);
+      }
+    });
+    footer.add(scoreBox);
+    footer.add(resetButton);
     return footer;
   }
 
@@ -451,19 +470,65 @@ public class EarTrainer {
     }
   }
 
+  static class ScoreKeeper {
+    private int numRight = 0;
+    private int numWrong = 0;
+    private Runnable scoreChangeListener;
+
+    public void addResult(boolean correct) {
+      if (correct) {
+        numRight++;
+      } else {
+        numWrong++;
+      }
+      scoreChangeListener.run();
+    }
+
+    public void reset() {
+      numRight = 0;
+      numWrong = 0;
+      scoreChangeListener.run();
+    }
+
+    private int getTotal() {
+      return numRight + numWrong;
+    }
+
+    public String getScore() {
+      int total = getTotal();
+      if (total == 0) {
+        return "";
+      }
+      double percent = (numRight * 100.0) / total;
+
+      StringBuilder out = new StringBuilder();
+      Formatter formatter = new Formatter(out);
+      formatter.format("Score: %.0f%% (%d of %d)", percent, numRight, total);
+      return out.toString();
+    }
+
+    public void addScoreChangeListener(Runnable listener) {
+      this.scoreChangeListener = listener;
+    }
+  }
+
   static class Quizzer {
     private final QuestionChooser chooser;
     private final SequencePlayer player;
+    private final ScoreKeeper scoreKeeper;
 
     private final AnswerChoices choices;
     private final List<Interval> chosenAnswers;
     private Question currentQuestion;
+    private boolean correctSoFar = true;
 
     private final List<Runnable> answerChosenListeners;
 
-    Quizzer(QuestionChooser chooser, AnswerChoices choices, SequencePlayer player) {
+    Quizzer(QuestionChooser chooser, AnswerChoices choices, SequencePlayer player,
+        ScoreKeeper scoreKeeper) {
       this.chooser = chooser;
       this.choices = choices;
+      this.scoreKeeper = scoreKeeper;
       this.player = player;
       this.chosenAnswers = new ArrayList<Interval>();
       this.answerChosenListeners = new ArrayList<Runnable>();
@@ -475,6 +540,7 @@ public class EarTrainer {
 
     void startNewQuestion() throws UnavailableException {
       currentQuestion = chooser.chooseQuestion();
+      correctSoFar = true;
       choices.startNewInterval(currentQuestion.getChoices());
       chosenAnswers.clear();
       playQuestionNotes();
@@ -499,9 +565,11 @@ public class EarTrainer {
         choices.startNewInterval(currentQuestion.getChoices());
         chosenAnswers.add(answer);
         if (chosenAnswers.size() >= currentQuestion.getAnswerCount()) {
+          scoreKeeper.addResult(correctSoFar);
           startNewQuestion();
         }
       } else {
+        correctSoFar = false;
         choices.addWrongAnswer(answer);
         playQuestionNotes();
       }
