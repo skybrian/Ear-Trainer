@@ -31,6 +31,7 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Formatter;
@@ -328,17 +329,38 @@ public class EarTrainer {
     }
   }
 
+  static class Phrase {
+    private List<Interval> intervals = new ArrayList<Interval>();
+
+    void addRandomInterval(Random randomness, Collection<Interval> choices) {
+      List<Interval> answers = new ArrayList<Interval>(choices);
+      intervals.add(answers.get(randomness.nextInt(answers.size())));
+    }
+
+    Interval getInterval(int position) {
+      return intervals.get(position);
+    }
+
+    int getIntervalCount() {
+      return intervals.size();
+    }
+
+    Iterable<Interval> getIntervals() {
+      return intervals;
+    }
+  }
+
   // ============= Rules of the Game ==============
 
   static class Question {
     private final Sequence prompt;
     private final EnumSet<Interval> choices;
-    private final List<Interval> answers;
+    private final Phrase answer;
 
-    Question(Sequence prompt, EnumSet<Interval> choices, List<Interval> answers) {
+    Question(Sequence prompt, EnumSet<Interval> choices, Phrase answer) {
       this.prompt = prompt;
       this.choices = choices;
-      this.answers = answers;
+      this.answer = answer;
     }
 
     void play(SequencePlayer player) throws UnavailableException {
@@ -346,11 +368,11 @@ public class EarTrainer {
     }
 
     boolean isCorrect(Interval answer, int position) {
-      return this.answers.get(position) == answer;
+      return this.answer.getInterval(position) == answer;
     }
 
    int getAnswerCount() {
-      return answers.size();
+      return answer.getIntervalCount();
     }
 
     EnumSet<Interval> getChoices() {
@@ -423,30 +445,25 @@ public class EarTrainer {
     }
 
     Question chooseQuestion() throws UnavailableException {
-      List<Interval> answers = chooseRandomIntervals();
-      Sequence prompt = chooseRandomSequence(answers);
-      return new Question(prompt, choices.clone(), answers);
+      Phrase answer = chooseRandomPhrase();
+      Sequence prompt = chooseRandomSequence(answer);
+      return new Question(prompt, choices.clone(), answer);
     }
 
-    private List<Interval> chooseRandomIntervals() {
-      List<Interval> result = new ArrayList<Interval>();
+    private Phrase chooseRandomPhrase() {
+      Phrase phrase = new Phrase();
       for (int i = 0; i < noteCount - 1; i++) {
-        result.add(chooseRandomInterval());
+        phrase.addRandomInterval(randomness, choices);
       }
-      return result;
+      return phrase;
     }
 
-    private Interval chooseRandomInterval() {
-      List<Interval> answers = new ArrayList<Interval>(choices);
-      return answers.get(randomness.nextInt(answers.size()));
-    }
-
-    private Sequence chooseRandomSequence(List<Interval> intervals) throws UnavailableException {
+    private Sequence chooseRandomSequence(Phrase phrase) throws UnavailableException {
       SequenceBuilder builder = new SequenceBuilder();
       int note = chooseRandomNote();
       builder.addNote(note);
 
-      for (Interval interval : intervals) {
+      for (Interval interval : phrase.getIntervals()) {
         note = chooseNextNote(note, interval);
         builder.addNote(note);
       }
