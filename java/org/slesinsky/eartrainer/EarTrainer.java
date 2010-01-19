@@ -30,6 +30,7 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,6 +60,7 @@ public class EarTrainer {
       Collections.unmodifiableSet(
           EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth));
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
+  private static final Direction DEFAULT_DIRECTION = Direction.BOTH;
 
   private static final int BEATS_PER_MINUTE = 80;
 
@@ -243,11 +245,45 @@ public class EarTrainer {
     return panel;
   }
 
-  private static JComponent makeFooter(final QuestionChooser chooser, final ScoreKeeper scoreKeeper) {
+  private static JComponent makeFooter(QuestionChooser chooser, ScoreKeeper scoreKeeper) {
     Box footer = Box.createHorizontalBox();
 
-    footer.add(new JLabel("Notes in next phrase:"));
-    footer.add(makeSpacer());
+    Box leftSide = Box.createVerticalBox();
+    leftSide.add(makeNoteCountWidget(chooser));
+    leftSide.add(makeNoteDirectionWidget(chooser));
+    leftSide.setAlignmentY(Component.BOTTOM_ALIGNMENT);
+    footer.add(leftSide);
+
+    footer.add(Box.createHorizontalGlue());
+    footer.add(makeScoreWidget(scoreKeeper));
+    return footer;
+  }
+
+  static class DirectionToggleButton {
+    private int choice = 0;
+    private final JButton button;
+
+    DirectionToggleButton(final QuestionChooser chooser) {
+      choice = chooser.getDirection().ordinal();
+      button = new JButton(Direction.values()[choice].getLabel());
+      button.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent actionEvent) {
+          choice++;
+          if (choice >= Direction.values().length) {
+            choice = 0;
+          }
+          Direction newDir = Direction.values()[choice];
+          chooser.setDirection(newDir);
+          button.setText(newDir.getLabel());
+        }
+      });
+    }
+  }
+
+  private static JComponent makeNoteCountWidget(final QuestionChooser chooser) {
+    Box result = Box.createHorizontalBox();
+    result.add(new JLabel("Notes in next phrase:"));
+    result.add(makeSpacer());
 
     final SpinnerNumberModel model = new SpinnerNumberModel(2, 2, 99, 1);
     model.addChangeListener(new ChangeListener() {
@@ -261,10 +297,20 @@ public class EarTrainer {
         return getPreferredSize();
       }
     };
-    footer.add(spinner);
+    result.add(spinner);
+    result.setAlignmentX(Component.LEFT_ALIGNMENT);
+    return result;
+  }
 
-    footer.add(Box.createHorizontalGlue());
+  private static JComponent makeNoteDirectionWidget(QuestionChooser chooser) {
+    Box result = Box.createHorizontalBox();
+    result.add(new JLabel("Direction: "));
+    result.add(new DirectionToggleButton(chooser).button);
+    result.setAlignmentX(Component.LEFT_ALIGNMENT);
+    return result;
+  }
 
+  private static JComponent makeScoreWidget(final ScoreKeeper scoreKeeper) {
     final JButton resetButton = new JButton(new SimpleAction("Reset") {
       @Override
       void act() throws UnavailableException {
@@ -280,9 +326,13 @@ public class EarTrainer {
         resetButton.setVisible(scoreKeeper.getTotal() > 0);
       }
     });
-    footer.add(scoreBox);
-    footer.add(resetButton);
-    return footer;
+
+    Box result = Box.createHorizontalBox();
+    result.add(scoreBox);
+    result.add(resetButton);
+    result.setAlignmentY(Component.BOTTOM_ALIGNMENT);
+
+    return result;
   }
 
   private static Component makeSpacer() {
@@ -328,18 +378,34 @@ public class EarTrainer {
     private int downFrom(int note) {
       return note - ordinal();
     }
-
-    public int nextNote(int currentNote, Direction direction) {
-      return direction == Direction.UP ? currentNote + ordinal() : currentNote - ordinal();
-    }
   }
 
-  enum Direction { UP, DOWN }
+  enum Direction {
+    ASCENDING("Up", true),
+    DESCENDING("Down", false),
+    BOTH("Both", true, false);
+
+    private final String label;
+    private final List<Boolean> choices;
+
+    Direction(String label, Boolean... choices) {
+      this.label = label;
+      this.choices = Collections.unmodifiableList(Arrays.asList(choices));
+    }
+
+    public String getLabel() {
+      return label;
+    }
+
+    public List<Boolean> getChoices() {
+      return choices;
+    }
+  }
 
   static class PhraseBuilder {
     private final Random randomness;
     private final List<Interval> intervals = new ArrayList<Interval>();
-    private final List<Direction> directions = new ArrayList<Direction>();
+    private final List<Boolean> isAscendingList = new ArrayList<Boolean>();
 
     PhraseBuilder(Random randomness) {
       this.randomness = randomness;
@@ -347,9 +413,9 @@ public class EarTrainer {
 
     void addRandomInterval(
         Collection<Interval> intervalChoices,
-        Collection<Direction> directionChoices) {
+        Direction direction) {
       intervals.add(choose(this.randomness, intervalChoices));
-      directions.add(choose(this.randomness, directionChoices));
+      isAscendingList.add(choose(this.randomness, direction.getChoices()));
     }
 
     public List<Interval> getIntervals() {
@@ -361,7 +427,12 @@ public class EarTrainer {
       List<Integer> result = new ArrayList<Integer>();
       result.add(note);
       for (int i = 0; i < intervals.size(); i++) {
-        note = intervals.get(i).nextNote(note, directions.get(i));
+        Interval interval = intervals.get(i);
+        if (isAscendingList.get(i)) {
+          note = interval.upFrom(note);
+        } else {
+          note = interval.downFrom(note);
+        }
         result.add(note);
       }
       return result;
@@ -458,15 +529,14 @@ public class EarTrainer {
     private final Random randomness;
 
     private final EnumSet<Interval> intervalChoices;
-    private final List<Direction> directionChoices;
+    private Direction direction;
     private int noteCount;
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
       this.intervalChoices =
           EnumSet.copyOf(DEFAULT_INTERVALS_IN_PHRASE);
-      this.directionChoices =
-          new ArrayList<Direction>(Arrays.asList(Direction.UP, Direction.DOWN));
+      this.direction = DEFAULT_DIRECTION;
       this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
 
@@ -486,6 +556,14 @@ public class EarTrainer {
       this.noteCount = newValue;
     }
 
+    Direction getDirection() {
+      return direction;
+    }
+
+    void setDirection(Direction newValue) {
+      this.direction = newValue;
+    }
+
     Question chooseQuestion() throws UnavailableException {
       while (true) {
         PhraseBuilder phrase = chooseRandomPhrase();
@@ -502,7 +580,7 @@ public class EarTrainer {
     private PhraseBuilder chooseRandomPhrase() {
       PhraseBuilder phrase = new PhraseBuilder(randomness);
       for (int i = 0; i < noteCount - 1; i++) {
-        phrase.addRandomInterval(intervalChoices, directionChoices);
+        phrase.addRandomInterval(intervalChoices, direction);
       }
       return phrase;
     }
