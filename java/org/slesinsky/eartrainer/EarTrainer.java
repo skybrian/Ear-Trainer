@@ -31,6 +31,7 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -327,26 +328,63 @@ public class EarTrainer {
     private int downFrom(int note) {
       return note - ordinal();
     }
+
+    public int nextNote(int currentNote, Direction direction) {
+      return direction == Direction.UP ? currentNote + ordinal() : currentNote - ordinal();
+    }
   }
 
-  static class Phrase {
-    private List<Interval> intervals = new ArrayList<Interval>();
+  enum Direction { UP, DOWN }
 
-    void addRandomInterval(Random randomness, Collection<Interval> choices) {
-      List<Interval> answers = new ArrayList<Interval>(choices);
-      intervals.add(answers.get(randomness.nextInt(answers.size())));
+  static class PhraseBuilder {
+    private final Random randomness;
+    private final List<Interval> intervals = new ArrayList<Interval>();
+    private final List<Direction> directions = new ArrayList<Direction>();
+
+    PhraseBuilder(Random randomness) {
+      this.randomness = randomness;
     }
 
-    Interval getInterval(int position) {
-      return intervals.get(position);
+    void addRandomInterval(
+        Collection<Interval> intervalChoices,
+        Collection<Direction> directionChoices) {
+      intervals.add(choose(this.randomness, intervalChoices));
+      directions.add(choose(this.randomness, directionChoices));
     }
 
-    int getIntervalCount() {
-      return intervals.size();
+    public List<Interval> getIntervals() {
+      return new ArrayList<Interval>(intervals);
     }
 
-    Iterable<Interval> getIntervals() {
-      return intervals;
+    List<Integer> getNotes(int startNote) {
+      int note = startNote;
+      List<Integer> result = new ArrayList<Integer>();
+      result.add(note);
+      for (int i = 0; i < intervals.size(); i++) {
+        note = intervals.get(i).nextNote(note, directions.get(i));
+        result.add(note);
+      }
+      return result;
+    }
+
+    int getMinNote(int startNote) {
+      int lowest = startNote;
+      for (int note : getNotes(startNote)) {
+        lowest = Math.min(lowest, note);
+      }
+      return lowest;
+    }
+
+    int getMaxNote(int startNote) {
+      int highest = 0;
+      for (int note : getNotes(startNote)) {
+        highest = Math.max(highest, note);
+      }
+      return highest;
+    }
+
+    int getRange() {
+      return getMaxNote(0) - getMinNote(0);
     }
   }
 
@@ -355,9 +393,9 @@ public class EarTrainer {
   static class Question {
     private final Sequence prompt;
     private final EnumSet<Interval> choices;
-    private final Phrase answer;
+    private final List<Interval> answer;
 
-    Question(Sequence prompt, EnumSet<Interval> choices, Phrase answer) {
+    Question(Sequence prompt, EnumSet<Interval> choices, List<Interval> answer) {
       this.prompt = prompt;
       this.choices = choices;
       this.answer = answer;
@@ -368,11 +406,11 @@ public class EarTrainer {
     }
 
     boolean isCorrect(Interval answer, int position) {
-      return this.answer.getInterval(position) == answer;
+      return this.answer.get(position) == answer;
     }
 
    int getAnswerCount() {
-      return answer.getIntervalCount();
+      return answer.size();
     }
 
     EnumSet<Interval> getChoices() {
@@ -419,25 +457,29 @@ public class EarTrainer {
   static class QuestionChooser {
     private final Random randomness;
 
-    private final EnumSet<Interval> choices;
+    private final EnumSet<Interval> intervalChoices;
+    private final List<Direction> directionChoices;
     private int noteCount;
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
-      this.choices = EnumSet.copyOf(DEFAULT_INTERVALS_IN_PHRASE);
+      this.intervalChoices =
+          EnumSet.copyOf(DEFAULT_INTERVALS_IN_PHRASE);
+      this.directionChoices =
+          new ArrayList<Direction>(Arrays.asList(Direction.UP, Direction.DOWN));
       this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
 
     void setEnabled(Interval choice, boolean newValue) {
       if (newValue) {
-        choices.add(choice);
+        intervalChoices.add(choice);
       } else {
-        choices.remove(choice);
+        intervalChoices.remove(choice);
       }
     }
 
     boolean isEnabled(Interval interval) {
-      return choices.contains(interval);
+      return intervalChoices.contains(interval);
     }
 
     void setNoteCount(int newValue) {
@@ -445,45 +487,32 @@ public class EarTrainer {
     }
 
     Question chooseQuestion() throws UnavailableException {
-      Phrase answer = chooseRandomPhrase();
-      Sequence prompt = chooseRandomSequence(answer);
-      return new Question(prompt, choices.clone(), answer);
+      while (true) {
+        PhraseBuilder phrase = chooseRandomPhrase();
+        int remainingRange = (HIGHEST_NOTE - LOWEST_NOTE) - phrase.getRange();
+        if (remainingRange >= 0) {
+          int lowNote = LOWEST_NOTE + randomness.nextInt(remainingRange + 1);
+          int startNote = lowNote - phrase.getMinNote(0);
+          Sequence prompt = makeSequence(phrase.getNotes(startNote));
+          return new Question(prompt, intervalChoices.clone(), phrase.getIntervals());
+        }
+      }
     }
 
-    private Phrase chooseRandomPhrase() {
-      Phrase phrase = new Phrase();
+    private PhraseBuilder chooseRandomPhrase() {
+      PhraseBuilder phrase = new PhraseBuilder(randomness);
       for (int i = 0; i < noteCount - 1; i++) {
-        phrase.addRandomInterval(randomness, choices);
+        phrase.addRandomInterval(intervalChoices, directionChoices);
       }
       return phrase;
     }
 
-    private Sequence chooseRandomSequence(Phrase phrase) throws UnavailableException {
+    private Sequence makeSequence(List<Integer> notes) throws UnavailableException {
       SequenceBuilder builder = new SequenceBuilder();
-      int note = chooseRandomNote();
-      builder.addNote(note);
-
-      for (Interval interval : phrase.getIntervals()) {
-        note = chooseNextNote(note, interval);
+      for (int note : notes) {
         builder.addNote(note);
       }
       return builder.getSequence();
-    }
-
-    private int chooseNextNote(int note, Interval interval) {
-      List<Integer> candidates = new ArrayList<Integer>();
-      if (interval.upFrom(note) <= HIGHEST_NOTE) {
-        candidates.add(interval.upFrom(note));
-      }
-      if (interval.downFrom(note) >= LOWEST_NOTE) {
-        candidates.add(interval.downFrom(note));
-      }
-      return candidates.get(randomness.nextInt(candidates.size()));
-    }
-
-    private int chooseRandomNote() {
-      int noteCount = HIGHEST_NOTE - LOWEST_NOTE + 1;
-      return randomness.nextInt(noteCount) + LOWEST_NOTE;
     }
   }
 
@@ -684,6 +713,11 @@ public class EarTrainer {
   }
 
   // ====== Generic Utilities =======
+
+  private static <T> T choose(Random randomness, Collection<T> choices) {
+    List<T> answers = new ArrayList<T>(choices);
+    return answers.get(randomness.nextInt(answers.size()));
+  }
 
   public static class UnavailableException extends Exception {
     UnavailableException(Throwable throwable) {
