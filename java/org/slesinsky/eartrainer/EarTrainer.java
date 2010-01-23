@@ -60,7 +60,7 @@ public class EarTrainer {
       Collections.unmodifiableSet(
           EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth));
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
-  private static final Direction DEFAULT_DIRECTION = Direction.BOTH;
+  private static final Direction DEFAULT_DIRECTION = Direction.ASCENDING;
 
   private static final int BEATS_PER_MINUTE = 80;
 
