@@ -402,6 +402,34 @@ public class EarTrainer {
     }
   }
 
+  static class IntervalSet {
+    private final EnumSet<Interval> choices;
+
+    public IntervalSet(Collection<Interval> choices) {
+      this.choices = EnumSet.copyOf(choices);
+    }
+
+    public Interval choose(Random randomness) {
+      return EarTrainer.choose(randomness, choices);
+    }
+
+    public IntervalSet with(Interval choice) {
+      EnumSet<Interval> newSet = choices.clone();
+      newSet.add(choice);
+      return new IntervalSet(newSet);
+    }
+
+    public IntervalSet without(Interval choice) {
+      EnumSet<Interval> newSet = choices.clone();
+      newSet.remove(choice);
+      return new IntervalSet(newSet);
+    }
+
+    public boolean contains(Interval interval) {
+      return choices.contains(interval);
+    }
+  }
+
   static class PhraseBuilder {
     private final Random randomness;
     private final List<Interval> intervals = new ArrayList<Interval>();
@@ -412,9 +440,9 @@ public class EarTrainer {
     }
 
     void addRandomInterval(
-        Collection<Interval> intervalChoices,
+        IntervalSet intervalChoices,
         Direction direction) {
-      intervals.add(choose(this.randomness, intervalChoices));
+      intervals.add(intervalChoices.choose(this.randomness));
       isAscendingList.add(choose(this.randomness, direction.getChoices()));
     }
 
@@ -463,10 +491,10 @@ public class EarTrainer {
 
   static class Question {
     private final Sequence prompt;
-    private final EnumSet<Interval> choices;
+    private final IntervalSet choices;
     private final List<Interval> answer;
 
-    Question(Sequence prompt, EnumSet<Interval> choices, List<Interval> answer) {
+    Question(Sequence prompt, IntervalSet choices, List<Interval> answer) {
       this.prompt = prompt;
       this.choices = choices;
       this.answer = answer;
@@ -484,7 +512,7 @@ public class EarTrainer {
       return answer.size();
     }
 
-    EnumSet<Interval> getChoices() {
+    IntervalSet getChoices() {
       return choices;
     }
   }
@@ -504,7 +532,7 @@ public class EarTrainer {
       this.answerListeners.put(interval, listener);
     }
 
-    void startNewInterval(EnumSet<Interval> choices) {
+    void startNewInterval(IntervalSet choices) {
       enabledAnswers.clear();
       for (Interval answer : Interval.values()) {
         if (choices.contains(answer)) {
@@ -528,23 +556,23 @@ public class EarTrainer {
   static class QuestionChooser {
     private final Random randomness;
 
-    private final EnumSet<Interval> intervalChoices;
+    private IntervalSet intervalChoices;
     private Direction direction;
     private int noteCount;
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
       this.intervalChoices =
-          EnumSet.copyOf(DEFAULT_INTERVALS_IN_PHRASE);
+          new IntervalSet(DEFAULT_INTERVALS_IN_PHRASE);
       this.direction = DEFAULT_DIRECTION;
       this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
 
     void setEnabled(Interval choice, boolean newValue) {
       if (newValue) {
-        intervalChoices.add(choice);
+        intervalChoices = intervalChoices.with(choice);
       } else {
-        intervalChoices.remove(choice);
+        intervalChoices = intervalChoices.without(choice);
       }
     }
 
@@ -572,7 +600,7 @@ public class EarTrainer {
           int lowNote = LOWEST_NOTE + randomness.nextInt(remainingRange + 1);
           int startNote = lowNote - phrase.getMinNote(0);
           Sequence prompt = makeSequence(phrase.getNotes(startNote));
-          return new Question(prompt, intervalChoices.clone(), phrase.getIntervals());
+          return new Question(prompt, intervalChoices, phrase.getIntervals());
         }
       }
     }

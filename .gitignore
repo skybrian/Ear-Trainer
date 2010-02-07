@@ -1,0 +1,5 @@
+deploy.sh
+*.iws
+out
+web/EarTrainerApplet.class
+web/eartrainer.jar
