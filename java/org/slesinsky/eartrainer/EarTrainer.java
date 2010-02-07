@@ -35,13 +35,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A Swing app that quizzes the user to identify each interval in a random phrase.
@@ -49,16 +49,21 @@ import java.util.Set;
  * in it.
  */
 public class EarTrainer {
+  static final int MIDDLE_C = 60;
 
-  private static final int MIDDLE_C = 60;
-  private static final int LOWEST_NOTE =
-      Interval.Perfect_Fifth.downFrom(Interval.Octave.downFrom(MIDDLE_C));
-  private static final int HIGHEST_NOTE = 
-      Interval.Perfect_Fifth.upFrom(Interval.Octave.upFrom(MIDDLE_C));
+  static final Interval UNISON = new Interval(0);
+  static final Interval PERFECT_FOURTH = new Interval(5);
+  static final Interval PERFECT_FIFTH = new Interval(7);
+  static final Interval OCTAVE = new Interval(12);
 
-  private static final Set<Interval> DEFAULT_INTERVALS_IN_PHRASE =
-      Collections.unmodifiableSet(
-          EnumSet.of(Interval.Perfect_Fourth, Interval.Perfect_Fifth));
+  private static final int LOWEST_NOTE = PERFECT_FIFTH.downFrom(OCTAVE.downFrom(MIDDLE_C));
+  private static final int HIGHEST_NOTE = PERFECT_FIFTH.upFrom(OCTAVE.upFrom(MIDDLE_C));
+
+  private static final IntervalSet CHOOSABLE_INTERVALS = IntervalSet.forRange(UNISON, OCTAVE);
+  private static final IntervalSet BLACK_KEYS = IntervalSet.forHalfSteps(1,3,6,8,10);
+
+  private static final IntervalSet DEFAULT_INTERVALS_IN_PHRASE =
+      new IntervalSet(PERFECT_FOURTH, PERFECT_FIFTH);
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
   private static final Direction DEFAULT_DIRECTION = Direction.ASCENDING;
 
@@ -199,8 +204,8 @@ public class EarTrainer {
     intervals.setLayout(new GridLayout(8, 2));
 
     boolean isLeftColumn = true;
-    for (final Interval interval : Interval.values()) {
-      if (isLeftColumn && !interval.isBlackKey()) {
+    for (Interval interval : CHOOSABLE_INTERVALS.each()) {
+      if (isLeftColumn && !BLACK_KEYS.contains(interval)) {
         intervals.add(Box.createGlue());        
       } else {
         isLeftColumn = !isLeftColumn;
@@ -358,25 +363,66 @@ public class EarTrainer {
 
   // =========== Music Theory ===========
 
-  enum Interval {
-    Unison, Minor_Second, Major_Second, Minor_Third, Major_Third, Perfect_Fourth,
-    Tritone, Perfect_Fifth, Minor_Sixth, Major_Sixth, Minor_Seventh, Major_Seventh,
-    Octave;
+  static final class Interval implements Comparable<Interval> {
+    private int halfSteps;
+
+    Interval(int halfSteps) {
+      if (halfSteps < 0) {
+        throw new IllegalArgumentException("invalid value for halfSteps: " + halfSteps);
+      }
+      this.halfSteps = halfSteps;
+    }
 
     String getName() {
-      return toString().replace("_", " ");
+      switch (halfSteps) {
+        case 0: return "Unison";
+        case 1: return "Minor Second";
+        case 2: return "Major Second";
+        case 3: return "Minor Third";
+        case 4: return "Major Third";
+        case 5: return "Perfect Fourth";
+        case 6: return "Tritone";
+        case 7: return "Perfect Fifth";
+        case 8: return "Minor Sixth";
+        case 9: return "Major Sixth";
+        case 10: return "Minor Seventh";
+        case 11: return "Major Seventh";
+        case 12: return "Octave";
+        default:
+          return "Interval<" + halfSteps + ">";
+      }
     }
 
-    boolean isBlackKey() {
-      return this==Tritone || name().startsWith("Minor");
+    public Interval add(int halfSteps) {
+      return new Interval(this.halfSteps + halfSteps);
     }
 
-    private int upFrom(int note) {
-      return note + ordinal();
+    int upFrom(int note) {
+      return note + halfSteps;
     }
 
-    private int downFrom(int note) {
-      return note - ordinal();
+    int downFrom(int note) {
+      return note - halfSteps;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o.getClass() == Interval.class && halfSteps == ((Interval) o).halfSteps;
+    }
+
+    @Override
+    public int hashCode() {
+      return halfSteps;
+    }
+
+    public int compareTo(Interval other) {
+      if (halfSteps < other.halfSteps) {
+        return -1;
+      } else if (halfSteps == other.halfSteps) {
+        return 0;
+      } else {
+        return 1;
+      }
     }
   }
 
@@ -403,30 +449,72 @@ public class EarTrainer {
   }
 
   static class IntervalSet {
-    private final EnumSet<Interval> choices;
+    private final Set<Interval> choices;
 
-    public IntervalSet(Collection<Interval> choices) {
-      this.choices = EnumSet.copyOf(choices);
+    IntervalSet(Collection<Interval> choices) {
+      this.choices = new TreeSet<Interval>(choices);
     }
 
-    public Interval choose(Random randomness) {
+    IntervalSet(Interval... choices) {
+      this(Arrays.asList(choices));
+    }
+
+    Interval choose(Random randomness) {
       return EarTrainer.choose(randomness, choices);
     }
 
-    public IntervalSet with(Interval choice) {
-      EnumSet<Interval> newSet = choices.clone();
+    IntervalSet with(Interval choice) {
+      Set<Interval> newSet = new TreeSet<Interval>(choices);
       newSet.add(choice);
       return new IntervalSet(newSet);
     }
 
-    public IntervalSet without(Interval choice) {
-      EnumSet<Interval> newSet = choices.clone();
+    IntervalSet without(Interval choice) {
+      Set<Interval> newSet = new TreeSet<Interval>(choices);
       newSet.remove(choice);
       return new IntervalSet(newSet);
     }
 
-    public boolean contains(Interval interval) {
+    boolean contains(Interval interval) {
       return choices.contains(interval);
+    }
+
+    boolean isEmpty() {
+      return choices.isEmpty();
+    }
+
+    int size() {
+      return choices.size();
+    }
+
+    public Collection<Interval> each() {
+      return Collections.unmodifiableSet(choices);
+    }
+
+    Interval getLargest() {
+      if (isEmpty()) {
+        return null;
+      } else {
+        return new ArrayList<Interval>(choices).get(size() - 1);
+      }
+    }
+
+    static IntervalSet forRange(Interval lowest, Interval highest) {
+      List<Interval> choices = new ArrayList<Interval>();
+      Interval candidate = lowest;
+      while (candidate.compareTo(highest) <= 0) {
+        choices.add(candidate);
+        candidate = candidate.add(1);
+      }
+      return new IntervalSet(choices);
+    }
+
+    public static IntervalSet forHalfSteps(int... halfStep) {
+      List<Interval> choices = new ArrayList<Interval>();
+      for (int step : halfStep) {
+        choices.add(new Interval(step));
+      }
+      return new IntervalSet(choices);
     }
   }
 
@@ -505,7 +593,7 @@ public class EarTrainer {
     }
 
     boolean isCorrect(Interval answer, int position) {
-      return this.answer.get(position) == answer;
+      return this.answer.get(position).equals(answer);
     }
 
    int getAnswerCount() {
@@ -518,13 +606,13 @@ public class EarTrainer {
   }
 
   static class AnswerChoices {
-    private final EnumSet<Interval> enabledAnswers;
-    private final EnumSet<Interval> wrongAnswers;
+    private final Set<Interval> enabledAnswers;
+    private final Set<Interval> wrongAnswers;
     private final Map<Interval, Runnable> answerListeners;
 
     AnswerChoices() {
-      this.enabledAnswers = EnumSet.noneOf(Interval.class);
-      this.wrongAnswers = EnumSet.noneOf(Interval.class);
+      this.enabledAnswers = new TreeSet<Interval>();
+      this.wrongAnswers = new TreeSet<Interval>();
       this.answerListeners = new HashMap<Interval, Runnable>();
     }
 
@@ -533,12 +621,10 @@ public class EarTrainer {
     }
 
     void startNewInterval(IntervalSet choices) {
+      wrongAnswers.clear();
       enabledAnswers.clear();
-      for (Interval answer : Interval.values()) {
-        if (choices.contains(answer)) {
-          enabledAnswers.add(answer);
-        }
-        wrongAnswers.remove(answer);
+      enabledAnswers.addAll(choices.each());
+      for (Interval answer : CHOOSABLE_INTERVALS.each()) {
         answerListeners.get(answer).run();
       }
     }
@@ -562,8 +648,7 @@ public class EarTrainer {
 
     QuestionChooser(Random randomness) {
       this.randomness = randomness;
-      this.intervalChoices =
-          new IntervalSet(DEFAULT_INTERVALS_IN_PHRASE);
+      this.intervalChoices = DEFAULT_INTERVALS_IN_PHRASE;
       this.direction = DEFAULT_DIRECTION;
       this.noteCount = DEFAULT_NOTES_IN_PHRASE;
     }
