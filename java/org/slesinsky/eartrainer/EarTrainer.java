@@ -52,12 +52,15 @@ public class EarTrainer {
   static final int MIDDLE_C = 60;
 
   static final Interval UNISON = new Interval(0);
+  static final Interval MINOR_SECOND = new Interval(1);
   static final Interval PERFECT_FOURTH = new Interval(5);
   static final Interval PERFECT_FIFTH = new Interval(7);
   static final Interval OCTAVE = new Interval(12);
 
-  private static final int LOWEST_NOTE = PERFECT_FIFTH.downFrom(OCTAVE.downFrom(MIDDLE_C));
-  private static final int HIGHEST_NOTE = PERFECT_FIFTH.upFrom(OCTAVE.upFrom(MIDDLE_C));
+  private static final int LOWEST_NOTE =
+      MIDDLE_C - OCTAVE.getHalfSteps() - PERFECT_FIFTH.getHalfSteps();
+  private static final int HIGHEST_NOTE =
+      MIDDLE_C + OCTAVE.getHalfSteps() + PERFECT_FIFTH.getHalfSteps();
 
   private static final IntervalSet CHOOSABLE_INTERVALS = IntervalSet.forRange(UNISON, OCTAVE);
   private static final IntervalSet BLACK_KEYS = IntervalSet.forHalfSteps(1,3,6,8,10);
@@ -393,16 +396,12 @@ public class EarTrainer {
       }
     }
 
-    public Interval add(int halfSteps) {
-      return new Interval(this.halfSteps + halfSteps);
+    public int getHalfSteps() {
+      return halfSteps;
     }
 
-    int upFrom(int note) {
-      return note + halfSteps;
-    }
-
-    int downFrom(int note) {
-      return note - halfSteps;
+    Interval add(Interval other) {
+      return new Interval(this.halfSteps + other.halfSteps);
     }
 
     @Override
@@ -491,12 +490,16 @@ public class EarTrainer {
       return Collections.unmodifiableSet(choices);
     }
 
-    Interval getLargest() {
-      if (isEmpty()) {
-        return null;
-      } else {
-        return new ArrayList<Interval>(choices).get(size() - 1);
-      }
+    IntervalSet getSmallest(int count) {
+      return new IntervalSet(new ArrayList<Interval>(choices).subList(0, count));
+    }
+
+    IntervalSet getLargest(int count) {
+      return new IntervalSet(new ArrayList<Interval>(choices).subList(size() - count, size()));
+    }
+
+    Interval toInterval() {
+      return each().iterator().next();
     }
 
     static IntervalSet forRange(Interval lowest, Interval highest) {
@@ -504,7 +507,7 @@ public class EarTrainer {
       Interval candidate = lowest;
       while (candidate.compareTo(highest) <= 0) {
         choices.add(candidate);
-        candidate = candidate.add(1);
+        candidate = candidate.add(MINOR_SECOND);
       }
       return new IntervalSet(choices);
     }
@@ -545,9 +548,9 @@ public class EarTrainer {
       for (int i = 0; i < intervals.size(); i++) {
         Interval interval = intervals.get(i);
         if (isAscendingList.get(i)) {
-          note = interval.upFrom(note);
+          note += interval.getHalfSteps();
         } else {
-          note = interval.downFrom(note);
+          note -= interval.getHalfSteps();
         }
         result.add(note);
       }
@@ -678,16 +681,36 @@ public class EarTrainer {
     }
 
     Question chooseQuestion() throws UnavailableException {
+      int playRange = HIGHEST_NOTE - LOWEST_NOTE;
+      int maxPhraseRange = Math.min(playRange, getLargestPhraseRange());
       while (true) {
         PhraseBuilder phrase = chooseRandomPhrase();
-        int remainingRange = (HIGHEST_NOTE - LOWEST_NOTE) - phrase.getRange();
-        if (remainingRange >= 0) {
+        if (phrase.getRange() <= maxPhraseRange) {
+          int remainingRange = playRange - phrase.getRange();
           int lowNote = LOWEST_NOTE + randomness.nextInt(remainingRange + 1);
           int startNote = lowNote - phrase.getMinNote(0);
           Sequence prompt = makeSequence(phrase.getNotes(startNote));
           return new Question(prompt, intervalChoices, phrase.getIntervals());
         }
       }
+    }
+
+    /**
+     * Returns the range of a phrase including the largest interval, the second smallest
+     * interval, and padded out with the smallest interval.
+     */
+    private int getLargestPhraseRange() {
+      Interval smallest = intervalChoices.getSmallest(1).toInterval();
+      Interval secondSmallest = intervalChoices.getSmallest(2).getLargest(1).toInterval();
+      Interval largest = intervalChoices.getLargest(1).toInterval();
+      int largestPhraseRange = largest.getHalfSteps();
+      if (noteCount > 2) {
+        largestPhraseRange += secondSmallest.getHalfSteps();
+      }
+      for (int i = 3; i < noteCount; i++) {
+        largestPhraseRange += smallest.getHalfSteps();
+      }
+      return largestPhraseRange;
     }
 
     private PhraseBuilder chooseRandomPhrase() {
