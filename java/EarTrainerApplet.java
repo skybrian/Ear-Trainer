@@ -1,6 +1,7 @@
 // Copyright 2009 Brian Slesinsky
 
 import org.slesinsky.eartrainer.EarTrainer;
+import org.slesinsky.eartrainer.UnavailableException;
 
 import javax.swing.JApplet;
 import javax.swing.JLabel;
@@ -18,7 +19,7 @@ public class EarTrainerApplet extends JApplet {
       app = EarTrainer.makeApp();
       getContentPane().add(app.getPage());
       getContentPane().setBackground(Color.WHITE);      
-    } catch (EarTrainer.UnavailableException e) {
+    } catch (UnavailableException e) {
       add(new JLabel("Cannot start: " + e.getMessage()));
     }
   }
@@ -27,7 +28,7 @@ public class EarTrainerApplet extends JApplet {
   public void start() {
     try {
       app.start();
-    } catch (EarTrainer.UnavailableException e) {
+    } catch (UnavailableException e) {
       add(new JLabel("Cannot start: " + e.getMessage()));
     }
   }
