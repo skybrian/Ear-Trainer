@@ -1,7 +1,6 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
-import javax.sound.midi.Sequence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -62,13 +61,12 @@ class QuestionChooser {
     int playRange = HIGHEST_NOTE - LOWEST_NOTE;
     int maxPhraseRange = Math.min(playRange, getLargestPhraseRange());
     while (true) {
-      PhraseBuilder phrase = chooseRandomPhrase();
-      if (phrase.getRange() <= maxPhraseRange) {
-        int remainingRange = playRange - phrase.getRange();
+      PhraseBuilder builder = chooseRandomPhrase();
+      if (builder.getRange() <= maxPhraseRange) {
+        int remainingRange = playRange - builder.getRange();
         int lowNote = LOWEST_NOTE + randomness.nextInt(remainingRange + 1);
-        int startNote = lowNote - phrase.getMinNote(0);
-        Sequence prompt = makeSequence(phrase.getNotes(startNote));
-        return new Question(prompt, intervalChoices, phrase.getIntervals());
+        int startNote = lowNote - builder.getMinNote(0);
+        return new Question(builder.build(startNote), intervalChoices);
       }
     }
   }
@@ -97,14 +95,6 @@ class QuestionChooser {
       phrase.addRandomInterval(intervalChoices, direction);
     }
     return phrase;
-  }
-
-  private Sequence makeSequence(List<Integer> notes) throws UnavailableException {
-    SequenceBuilder builder = new SequenceBuilder();
-    for (int note : notes) {
-      builder.addNote(note);
-    }
-    return builder.getSequence();
   }
 
   /**
@@ -146,39 +136,16 @@ class QuestionChooser {
       intervals.add(interval);
     }
 
-    public List<Interval> getIntervals() {
-      return new ArrayList<Interval>(intervals);
-    }
-
-    List<Integer> getNotes(int startNote) {
-      int note = startNote;
-      List<Integer> result = new ArrayList<Integer>();
-      result.add(note);
-      for (Interval interval : intervals) {
-        note += interval.getHalfSteps();
-        result.add(note);
-      }
-      return result;
+    Phrase build(int startNote) {
+      return new Phrase(startNote, intervals);
     }
 
     int getMinNote(int startNote) {
-      int lowest = startNote;
-      for (int note : getNotes(startNote)) {
-        lowest = Math.min(lowest, note);
-      }
-      return lowest;
-    }
-
-    int getMaxNote(int startNote) {
-      int highest = 0;
-      for (int note : getNotes(startNote)) {
-        highest = Math.max(highest, note);
-      }
-      return highest;
+      return build(startNote).getMinNote();
     }
 
     int getRange() {
-      return getMaxNote(0) - getMinNote(0);
+      return build(0).getRange();
     }
   }
 }

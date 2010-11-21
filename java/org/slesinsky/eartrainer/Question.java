@@ -1,35 +1,30 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
-import javax.sound.midi.Sequence;
-import java.util.List;
-
 /**
  * A question that the ear trainer can ask the user. The question is a musical
  * phrase that was generated from a set of possible intervals.
  */
 class Question {
-  private final Sequence prompt;
   private final IntervalSet choices;
-  private final List<Interval> answer;
+  private final Phrase phrase;
 
-  Question(Sequence prompt, IntervalSet choices, List<Interval> answer) {
-    this.prompt = prompt;
+  Question(Phrase phrase, IntervalSet choices) {
     this.choices = choices;
-    this.answer = answer;
+    this.phrase = phrase;
   }
 
   void play(SequencePlayer player) throws UnavailableException {
-    player.play(prompt);
+    phrase.play(player);
   }
 
   boolean isCorrect(Interval candidate, int position) {
-    Interval answer = this.answer.get(position).toAscending();
+    Interval answer = phrase.getIntervals().get(position).toAscending();
     return answer.equals(candidate);
   }
 
   int getAnswerCount() {
-    return answer.size();
+    return phrase.getIntervals().size();
   }
 
   IntervalSet getChoices() {
