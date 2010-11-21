@@ -2,6 +2,7 @@
 package org.slesinsky.eartrainer;
 
 import java.util.Formatter;
+import java.util.List;
 
 /**
  * Keeps track of how many questions the user answered correctly.
@@ -17,8 +18,8 @@ class ScoreKeeper {
     scoreChangeListener.run();
   }
 
-  void addResult(boolean correct) {
-    if (correct) {
+  void addResult(Phrase phrase, List<Interval> firstChoices) {
+    if (phrase.getIntervals().equals(firstChoices)) {
       numRight++;
     } else {
       numWrong++;

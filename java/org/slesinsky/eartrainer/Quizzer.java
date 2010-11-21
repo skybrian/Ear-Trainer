@@ -12,10 +12,10 @@ class Quizzer {
   private final SequencePlayer player;
   private final ScoreKeeper scoreKeeper;
 
-  private final AnswerChoices choices;
-  private final List<Interval> chosenAnswers;
   private Question currentQuestion;
-  private boolean correctSoFar = true;
+  private int currentInterval;
+  private final AnswerChoices choices;
+  private final List<Interval> answers;
 
   private final List<Runnable> answerChosenListeners;
 
@@ -25,7 +25,7 @@ class Quizzer {
     this.choices = choices;
     this.scoreKeeper = scoreKeeper;
     this.player = player;
-    this.chosenAnswers = new ArrayList<Interval>();
+    this.answers = new ArrayList<Interval>();
     this.answerChosenListeners = new ArrayList<Runnable>();
   }
 
@@ -40,13 +40,13 @@ class Quizzer {
    */
   void startQuestion() throws UnavailableException {
     currentQuestion = chooser.chooseQuestion();
-    correctSoFar = true;
+    currentInterval = 0;
     choices.reset(currentQuestion.getChoices());
-    chosenAnswers.clear();
-    repeatQuestion();
+    answers.clear();
+    playQuestion();
   }
 
-  void repeatQuestion() throws UnavailableException {
+  void playQuestion() throws UnavailableException {
     currentQuestion.play(player);
   }  
   
@@ -59,17 +59,20 @@ class Quizzer {
     if (!candidate.isAscending()) {
       throw new IllegalArgumentException("got non-ascending interval");
     }
-    if (currentQuestion.isCorrect(candidate, chosenAnswers.size())) {
-      choices.reset(currentQuestion.getChoices());
-      chosenAnswers.add(candidate);
-      if (chosenAnswers.size() >= currentQuestion.getAnswerCount()) {
-        scoreKeeper.addResult(correctSoFar);
+    if (!hasPlayerAnsweredForThisInterval()) {
+      answers.add(candidate);  
+    }
+    if (currentQuestion.isCorrect(candidate, currentInterval)) {
+      currentInterval++;
+      if (currentInterval >= currentQuestion.getAnswerCount()) {
+        scoreKeeper.addResult(currentQuestion.getPhrase(), answers);
         startQuestion();
+      } else {
+        choices.reset(currentQuestion.getChoices());        
       }
     } else {
-      correctSoFar = false;
       choices.removeChoice(candidate);
-      repeatQuestion();
+      playQuestion();
     }
     for (Runnable listener : answerChosenListeners) {
       listener.run();
@@ -82,16 +85,22 @@ class Quizzer {
     return currentQuestion != null;
   }
 
+  private boolean hasPlayerAnsweredForThisInterval() {
+    return answers.size() > currentInterval;
+  }  
+  
   String getQuestionText() {
-    int intervalStartNote = chosenAnswers.size() + 1;
+    int intervalStartNote = currentInterval + 1;
     return "What's the difference in pitch between notes " + intervalStartNote +
         " and " + (intervalStartNote + 1) + "?";
   }
 
-  String getChosenAnswers() {
+  String getPhraseSoFar() {
+    List<Interval> phrase = 
+        currentQuestion.getPhrase().getIntervals().subList(0, currentInterval);
     StringBuilder result = new StringBuilder();
-    for (Interval answer : chosenAnswers) {
-      result.append(answer.getName());
+    for (Interval interval : phrase) {
+      result.append(interval.getName());
       result.append(", ");
     }
     return result.toString();

@@ -109,7 +109,7 @@ public class EarTrainer {
     SimpleAction play = new SimpleAction("Play it again") {
       @Override
       void act() throws UnavailableException {
-        quizzer.repeatQuestion();
+        quizzer.playQuestion();
       }
     };
 
@@ -145,7 +145,7 @@ public class EarTrainer {
     final JLabel answerLabel = new JLabel();
     quizzer.addAnswerChosenListener(new Runnable() {
       public void run() {
-        answerLabel.setText(quizzer.getChosenAnswers());
+        answerLabel.setText(quizzer.getPhraseSoFar());
       }
     });
     box.add(answerLabel);

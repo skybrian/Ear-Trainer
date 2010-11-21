@@ -30,4 +30,8 @@ class Question {
   IntervalSet getChoices() {
     return choices;
   }
+
+  Phrase getPhrase() {
+    return phrase;
+  }
 }

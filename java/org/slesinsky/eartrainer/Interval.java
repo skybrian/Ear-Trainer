@@ -19,7 +19,7 @@ final class Interval implements Comparable<Interval> {
   }
 
   String getName() {
-    switch (halfSteps) {
+    switch (Math.abs(halfSteps)) {
       case 0: return "Unison";
       case 1: return "Minor Second";
       case 2: return "Major Second";
