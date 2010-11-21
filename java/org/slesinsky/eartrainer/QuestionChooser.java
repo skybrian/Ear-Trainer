@@ -3,8 +3,6 @@ package org.slesinsky.eartrainer;
 
 import javax.sound.midi.Sequence;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -114,35 +112,24 @@ class QuestionChooser {
    * question.
    */
   static enum Direction {
-    ASCENDING("Up", true),
-    DESCENDING("Down", false),
-    BOTH("Both", true, false);
+    ASCENDING("Up"),
+    DESCENDING("Down"),
+    BOTH("Both");
 
     private final String label;
-    private final List<Boolean> choices;
 
-    Direction(String label, Boolean... choices) {
+    Direction(String label) {
       this.label = label;
-      this.choices = Collections.unmodifiableList(Arrays.asList(choices));
     }
 
     String getLabel() {
       return label;
-    }
-
-    /**
-     * Randomly chooses between ascending and descending, if available.
-     * @return true if ascending
-     */
-    private boolean choose(Random randomness) {
-      return Util.choose(randomness, choices);
     }
   }
 
   private static class PhraseBuilder {
     private final Random randomness;
     private final List<Interval> intervals = new ArrayList<Interval>();
-    private final List<Boolean> isAscendingList = new ArrayList<Boolean>();
 
     PhraseBuilder(Random randomness) {
       this.randomness = randomness;
@@ -151,8 +138,12 @@ class QuestionChooser {
     void addRandomInterval(
         IntervalSet intervalChoices,
         Direction direction) {
-      intervals.add(intervalChoices.choose(randomness));
-      isAscendingList.add(direction.choose(randomness));
+      Interval interval = intervalChoices.choose(randomness);
+      if (direction == Direction.DESCENDING ||
+          (direction == Direction.BOTH && randomness.nextBoolean())) {
+        interval = interval.invert();        
+      }
+      intervals.add(interval);
     }
 
     public List<Interval> getIntervals() {
@@ -163,13 +154,8 @@ class QuestionChooser {
       int note = startNote;
       List<Integer> result = new ArrayList<Integer>();
       result.add(note);
-      for (int i = 0; i < intervals.size(); i++) {
-        Interval interval = intervals.get(i);
-        if (isAscendingList.get(i)) {
-          note += interval.getHalfSteps();
-        } else {
-          note -= interval.getHalfSteps();
-        }
+      for (Interval interval : intervals) {
+        note += interval.getHalfSteps();
         result.add(note);
       }
       return result;

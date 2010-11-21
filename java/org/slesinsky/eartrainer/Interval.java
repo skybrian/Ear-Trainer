@@ -3,6 +3,7 @@ package org.slesinsky.eartrainer;
 
 /**
  * A musical interval. (The distance between two notes on a piano.)
+ * May be ascending or descending.
  */
 final class Interval implements Comparable<Interval> {
   static final Interval UNISON = new Interval(0);
@@ -14,9 +15,6 @@ final class Interval implements Comparable<Interval> {
   private final int halfSteps;
 
   Interval(int halfSteps) {
-    if (halfSteps < 0) {
-      throw new IllegalArgumentException("invalid value for halfSteps: " + halfSteps);
-    }
     this.halfSteps = halfSteps;
   }
 
@@ -40,6 +38,7 @@ final class Interval implements Comparable<Interval> {
     }
   }
 
+  /** Returns a negative value if descending */
   int getHalfSteps() {
     return halfSteps;
   }
@@ -48,6 +47,18 @@ final class Interval implements Comparable<Interval> {
     return new Interval(this.halfSteps + other.halfSteps);
   }
 
+  boolean isAscending() {
+    return halfSteps >= 0;
+  }
+  
+  Interval toAscending() {
+    return new Interval(Math.abs(halfSteps));
+  }
+
+  Interval invert() {
+    return new Interval(-halfSteps);
+  }
+    
   @Override
   public boolean equals(Object o) {
     return o.getClass() == Interval.class && halfSteps == ((Interval) o).halfSteps;

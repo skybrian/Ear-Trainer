@@ -53,9 +53,12 @@ class Quizzer {
   /**
    * Checks an answer to the current question. If correct, asks the next question.
    * Updates the score if needed.
-   * @param candidate  the answer that the user wants to try
+   * @param candidate  the answer that the user wants to try (must be ascending)
    */
   void checkAnswer(Interval candidate) throws UnavailableException {
+    if (!candidate.isAscending()) {
+      throw new IllegalArgumentException("got non-ascending interval");
+    }
     if (currentQuestion.isCorrect(candidate, chosenAnswers.size())) {
       choices.reset(currentQuestion.getChoices());
       chosenAnswers.add(candidate);

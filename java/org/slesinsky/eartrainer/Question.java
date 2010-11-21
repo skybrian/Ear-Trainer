@@ -23,8 +23,9 @@ class Question {
     player.play(prompt);
   }
 
-  boolean isCorrect(Interval answer, int position) {
-    return this.answer.get(position).equals(answer);
+  boolean isCorrect(Interval candidate, int position) {
+    Interval answer = this.answer.get(position).toAscending();
+    return answer.equals(candidate);
   }
 
   int getAnswerCount() {
