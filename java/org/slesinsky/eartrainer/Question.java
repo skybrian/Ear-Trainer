@@ -2,16 +2,16 @@
 package org.slesinsky.eartrainer;
 
 /**
- * A question that the ear trainer can ask the user. The question is a musical
- * phrase that was generated from a set of possible intervals.
+ * A question that the ear trainer can ask the user. The question consists of a
+ * musical phrase and a set of possible intervals to choose from.
  */
 class Question {
-  private final IntervalSet choices;
   private final Phrase phrase;
+  private final IntervalSet choices;
 
   Question(Phrase phrase, IntervalSet choices) {
-    this.choices = choices;
     this.phrase = phrase;
+    this.choices = choices;
   }
 
   void play(SequencePlayer player) throws UnavailableException {

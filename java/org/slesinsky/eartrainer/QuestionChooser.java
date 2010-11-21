@@ -58,16 +58,17 @@ class QuestionChooser {
   }
 
   Question chooseQuestion() throws UnavailableException {
-    int playRange = HIGHEST_NOTE - LOWEST_NOTE;
-    int maxPhraseRange = Math.min(playRange, getLargestPhraseRange());
+    int maxPhraseRange = Math.min(HIGHEST_NOTE - LOWEST_NOTE, getLargestPhraseRange());
     while (true) {
-      PhraseBuilder builder = chooseRandomPhrase();
-      if (builder.getRange() <= maxPhraseRange) {
-        int remainingRange = playRange - builder.getRange();
-        int lowNote = LOWEST_NOTE + randomness.nextInt(remainingRange + 1);
-        int startNote = lowNote - builder.getMinNote(0);
-        return new Question(builder.build(startNote), intervalChoices);
+      Phrase phrase = chooseRandomPhrase();
+      if (phrase.getRange() > maxPhraseRange) {
+        continue;
       }
+      phrase = phrase.transposeRandomly(randomness, LOWEST_NOTE, HIGHEST_NOTE);
+      if (phrase == null) {
+        continue;        
+      }
+      return new Question(phrase, intervalChoices);
     }
   }
 
@@ -89,12 +90,12 @@ class QuestionChooser {
     return largestPhraseRange;
   }
 
-  private PhraseBuilder chooseRandomPhrase() {
+  private Phrase chooseRandomPhrase() {
     PhraseBuilder phrase = new PhraseBuilder(randomness);
     for (int i = 0; i < noteCount - 1; i++) {
       phrase.addRandomInterval(intervalChoices, direction);
     }
-    return phrase;
+    return phrase.build(0);
   }
 
   /**
@@ -138,14 +139,6 @@ class QuestionChooser {
 
     Phrase build(int startNote) {
       return new Phrase(startNote, intervals);
-    }
-
-    int getMinNote(int startNote) {
-      return build(startNote).getMinNote();
-    }
-
-    int getRange() {
-      return build(0).getRange();
     }
   }
 }

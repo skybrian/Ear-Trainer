@@ -4,6 +4,7 @@ package org.slesinsky.eartrainer;
 import javax.sound.midi.Sequence;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A sequence of notes.
@@ -54,7 +55,26 @@ public class Phrase {
   List<Interval> getIntervals() {
     return intervals;
   }
-    
+
+  /**
+   * Randomly transposes this phrase to within the given range.
+   * Returns null if the phrase doesn't fit within the range.
+   */
+  Phrase transposeRandomly(Random randomness, int lowestNote, int highestNote) {
+    int maxPhraseRange = highestNote - lowestNote;
+    if (getRange() > maxPhraseRange) {
+      return null;
+    }
+    int remainingRange = maxPhraseRange - getRange();
+    int newLowNote = lowestNote + randomness.nextInt(remainingRange + 1);
+    int oldLowNote = getMinNote();
+    return transpose(newLowNote - oldLowNote);
+  }
+
+  Phrase transpose(int halfSteps) {
+    return new Phrase(startNote + halfSteps, intervals);
+  }
+
   void play(SequencePlayer player) throws UnavailableException {
     player.play(makeSequence());
   }
