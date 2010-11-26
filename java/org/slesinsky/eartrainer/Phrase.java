@@ -10,7 +10,7 @@ import java.util.Random;
 /**
  * A sequence of notes.
  */
-public class Phrase implements Comparable<Phrase> {
+class Phrase implements Comparable<Phrase> {
   private final int startNote;
   private final List<Interval> intervals;
 
