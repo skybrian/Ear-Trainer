@@ -3,13 +3,14 @@ package org.slesinsky.eartrainer;
 
 import javax.sound.midi.Sequence;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 /**
  * A sequence of notes.
  */
-public class Phrase {
+public class Phrase implements Comparable<Phrase> {
   private final int startNote;
   private final List<Interval> intervals;
 
@@ -75,6 +76,10 @@ public class Phrase {
     return new Phrase(startNote + halfSteps, intervals);
   }
 
+  Phrase normalize() {
+    return new Phrase(0, intervals);
+  }
+
   void play(SequencePlayer player) throws UnavailableException {
     player.play(makeSequence());
   }
@@ -85,5 +90,38 @@ public class Phrase {
       builder.addNote(note);
     }
     return builder.getSequence();
+  }
+
+  @Override
+  public int hashCode() {
+    return startNote ^ intervals.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (!(object instanceof Phrase)) {
+      return false;
+    }
+    Phrase other = (Phrase) object;
+    return startNote == other.startNote && intervals.equals(other.intervals);
+  }
+
+  public int compareTo(Phrase other) {
+    Iterator<Interval> it = intervals.iterator();
+    Iterator<Interval> otherIt = other.intervals.iterator();
+    while (it.hasNext() && otherIt.hasNext()) {
+      int result = it.next().compareTo(otherIt.next());
+      if (result != 0) {
+        return result;
+      }
+    }
+    if (it.hasNext() != otherIt.hasNext()) {
+      return it.hasNext() ? 1 : -1;
+    } 
+
+    if (startNote != other.startNote) {
+      return startNote < other.startNote ? -1 : 1;
+    }
+    return 0;
   }
 }

@@ -11,18 +11,22 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -32,8 +36,6 @@ import java.util.Random;
  */
 public class EarTrainer {
   private static final IntervalSet BLACK_KEYS = IntervalSet.forHalfSteps(1,3,6,8,10);
-
-  private static final Color BACKGROUND_COLOR = Color.WHITE;
 
   public static void main(String[] args) throws UnavailableException {
     App app = makeApp();
@@ -48,12 +50,17 @@ public class EarTrainer {
     SequencePlayer player = new SequencePlayer();
     ScoreKeeper scoreKeeper = new ScoreKeeper();
     Quizzer quizzer = new Quizzer(chooser, choices, player, scoreKeeper);
-    JComponent page = makePage(
+    JComponent quizPage = makeQuizPage(
       makeHeader(quizzer),
       makeAnswerBar(quizzer),
       makeAnswerButtonGrid(chooser, quizzer, choices),
       makeFooter(chooser, scoreKeeper));
-    return new App(page, quizzer, player);
+
+    JTabbedPane tabs = new JTabbedPane();
+    tabs.addTab("Quiz", quizPage);
+    tabs.addTab("Scores", makeScoresPage(scoreKeeper));
+    
+    return new App(tabs, quizzer, player);
   }
 
   public static class App {
@@ -84,7 +91,6 @@ public class EarTrainer {
 
   private static JFrame makeWindow(JComponent content) {
     JFrame frame = new JFrame("Ear Trainer");
-    frame.getContentPane().setBackground(BACKGROUND_COLOR);
     frame.getContentPane().add(content);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
@@ -92,10 +98,9 @@ public class EarTrainer {
     return frame;
   }
 
-  private static JComponent makePage(JComponent... sections) {
+  private static JComponent makeQuizPage(JComponent... sections) {
     Box page = Box.createVerticalBox();
     page.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-    page.setBackground(BACKGROUND_COLOR);
     for (int i = 0; i < sections.length; i++) {
       page.add(sections[i]);
       if (i < sections.length - 1) {
@@ -162,7 +167,7 @@ public class EarTrainer {
   private static JPanel makeAnswerButtonGrid(QuestionChooser chooser, Quizzer quizzer,
       AnswerChoices choices) {
     JPanel intervals = new JPanel();
-    intervals.setBackground(BACKGROUND_COLOR);
+    intervals.setOpaque(false);
     intervals.setLayout(new GridLayout(8, 2));
 
     boolean isLeftColumn = true;
@@ -204,7 +209,7 @@ public class EarTrainer {
     });
 
     JPanel panel = new JPanel();
-    panel.setBackground(BACKGROUND_COLOR);
+    panel.setOpaque(false);
     panel.setLayout(new BorderLayout());
     panel.add(checkBox, BorderLayout.WEST);
     panel.add(chooseButton, BorderLayout.CENTER);
@@ -226,6 +231,15 @@ public class EarTrainer {
     return footer;
   }
 
+  private static JComponent makeScoresPage(final ScoreKeeper scoreKeeper) {
+
+    JTable table = new JTable(new PhraseScoreTableModel(scoreKeeper));
+
+    Box page = Box.createVerticalBox();
+    page.add(new JScrollPane(table));
+    return page;
+  }  
+  
   static class DirectionToggleButton {
     private int choice = 0;
     private final JButton button;
@@ -321,5 +335,58 @@ public class EarTrainer {
     }
 
     abstract void act() throws UnavailableException;
+  }
+
+  private static class PhraseScoreTableModel extends AbstractTableModel {
+    private List<ScoreKeeper.PhraseScore> scores;
+ 
+    PhraseScoreTableModel(final ScoreKeeper scoreKeeper) {
+      scores = scoreKeeper.getPhraseScores();
+      scoreKeeper.addScoreChangeListener(new Runnable() {
+        public void run() {
+          scores = scoreKeeper.getPhraseScores();
+          fireTableDataChanged();
+        }
+      });
+    }
+
+    public int getColumnCount() {
+      return 3;
+    }
+
+    @Override
+      public String getColumnName(int columnIndex) {
+      switch (columnIndex) {
+        case 0: return "Phrase";
+        case 1: return "Right";
+        case 2: return "Wrong";
+        default: return "";
+      }
+    }
+
+    public int getRowCount() {
+      return scores.size();
+    }
+
+    public Object getValueAt(int rowIndex, int columnIndex) {
+      ScoreKeeper.PhraseScore row = this.scores.get(rowIndex);
+      switch (columnIndex) {
+        case 0: return renderPhrase(row.getPhrase());
+        case 1: return row.getNumRight();
+        case 2: return row.getNumWrong();
+        default: return "";
+      }
+    }
+
+    private String renderPhrase(Phrase phrase) {
+      StringBuilder result = new StringBuilder();
+      for (Interval interval : phrase.getIntervals()) {
+        if (result.length() > 0) {
+          result.append(" ");
+        }
+        result.append(interval.getShortName());
+      }
+      return result.toString();
+    }
   }
 }
