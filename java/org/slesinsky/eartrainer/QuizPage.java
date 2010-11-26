@@ -2,7 +2,6 @@
 package org.slesinsky.eartrainer;
 
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -18,7 +17,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -250,20 +248,4 @@ class QuizPage {
     }
   }
 
-  private static abstract class SimpleAction extends AbstractAction {
-    SimpleAction(String name) {
-      putValue(Action.NAME, name);
-    }
-
-    public void actionPerformed(ActionEvent actionEvent) {
-      try {
-        act();
-      } catch (UnavailableException e) {
-        Toolkit.getDefaultToolkit().beep();
-        e.printStackTrace(System.err);
-      }
-    }
-
-    abstract void act() throws UnavailableException;
-  }
 }

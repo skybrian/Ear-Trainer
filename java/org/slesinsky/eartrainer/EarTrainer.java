@@ -30,7 +30,7 @@ public class EarTrainer {
 
     JTabbedPane tabs = new JTabbedPane();
     tabs.addTab("Quiz", quizPage);
-    tabs.addTab("Scores", ScorePage.create(scoreKeeper));
+    tabs.addTab("Scores", ScorePage.create(scoreKeeper, player));
     
     return new App(tabs, quizzer, player);
   }

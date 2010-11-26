@@ -124,4 +124,20 @@ class Phrase implements Comparable<Phrase> {
     }
     return 0;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder result = new StringBuilder();
+    result.append("Phrase(" + startNote +": ");
+    boolean first = true;
+    for (Interval interval : intervals) {
+      if (!first) {
+        result.append(" ");
+      }
+      result.append(interval);
+      first = false;
+    }
+    result.append(")");
+    return result.toString();
+  }
 }
