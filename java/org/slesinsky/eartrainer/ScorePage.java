@@ -8,6 +8,8 @@ import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
@@ -20,36 +22,36 @@ import java.util.List;
 class ScorePage {
   static JComponent create(ScoreKeeper scoreKeeper, SequencePlayer player) {
 
-    JTable table = new JTable(new PhraseTableModel(scoreKeeper));
-    table.setDefaultRenderer(Phrase.class, new PhraseRenderer());
-    table.setDefaultEditor(Phrase.class, new PhraseEditor(player));
+    PhraseTableModel model = new PhraseTableModel(scoreKeeper);
+
+    final JTable table = new JTable(model);
+    table.setDefaultRenderer(ScoreKeeper.PhraseRow.class, new PhraseRenderer());
+    table.setDefaultEditor(ScoreKeeper.PhraseRow.class, new PhraseEditor(player));
     table.getColumn("Right").setMaxWidth(50);
     table.getColumn("Wrong").setMaxWidth(50);
+
+    model.addTableModelListener(new TableModelListener() {
+      public void tableChanged(TableModelEvent e) {
+        TableCellEditor editor = table.getCellEditor();
+        if (editor != null) {
+          editor.cancelCellEditing();
+        }
+      }
+    });
     
     Box page = Box.createVerticalBox();
     page.add(new JScrollPane(table));
     return page;
   }
 
-  private static String renderPhrase(Phrase phrase) {
-    StringBuilder result = new StringBuilder();
-    for (Interval interval : phrase.getIntervals()) {
-      if (result.length() > 0) {
-        result.append(" ");
-      }
-      result.append(interval.getShortName());
-    }
-    return result.toString();
-  }
-  
   private static class PhraseTableModel extends AbstractTableModel {
-    private List<ScoreKeeper.PhraseScore> scores;
+    private List<ScoreKeeper.PhraseRow> rows;
 
     PhraseTableModel(final ScoreKeeper scoreKeeper) {
-      scores = scoreKeeper.getPhraseScores();
+      rows = scoreKeeper.getPhraseRows();
       scoreKeeper.addScoreChangeListener(new Runnable() {
         public void run() {
-          scores = scoreKeeper.getPhraseScores();
+          rows = scoreKeeper.getPhraseRows();
           fireTableDataChanged();
         }
       });
@@ -63,7 +65,7 @@ class ScorePage {
     public Class<?> getColumnClass(int columnIndex) {
       switch (columnIndex) {
         case 0:
-          return Phrase.class;
+          return ScoreKeeper.PhraseRow.class;
         default:
           return Object.class;
       }
@@ -89,14 +91,14 @@ class ScorePage {
     }
 
     public int getRowCount() {
-      return scores.size();
+      return rows.size();
     }
 
     public Object getValueAt(int rowIndex, int columnIndex) {
-      ScoreKeeper.PhraseScore row = this.scores.get(rowIndex);
+      ScoreKeeper.PhraseRow row = this.rows.get(rowIndex);
       switch (columnIndex) {
         case 0:
-          return row.getPhrase();
+          return row;
         case 1:
           return row.getNumRight();
         case 2:
@@ -112,15 +114,15 @@ class ScorePage {
     
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
         boolean hasFocus, int row, int column) {
-      cell.setPhrase((Phrase) value);
+      cell.setPhrases((ScoreKeeper.PhraseRow)value);
       return cell.getComponent();
     }
   }
   
   private static class PhraseEditor extends AbstractCellEditor implements TableCellEditor {
     private final PhraseCell cell;
-    private Phrase phrase;
-    
+    private ScoreKeeper.PhraseRow currentRow;
+
     PhraseEditor(SequencePlayer player) {
       cell = new PhraseCell();
       cell.setPlayer(player);
@@ -128,42 +130,57 @@ class ScorePage {
 
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, 
         int row, int column) {
-      phrase = (Phrase) value;
-      cell.setPhrase(phrase);
+      currentRow = (ScoreKeeper.PhraseRow) value;
+      cell.setPhrases(currentRow);
       return cell.getComponent();
     }
 
     public Object getCellEditorValue() {
-      return phrase;      
+      return currentRow;      
     }
   }
 
   private static class PhraseCell {
     private final JButton button;
-    private Phrase phrase;
+    private List<Phrase> phrases;
+    private int lastPhrase = -1;
 
     PhraseCell() {
       button = new JButton();
-      //button.setUI(new BasicButtonUI());
       button.setHorizontalAlignment(SwingConstants.LEFT);
     }
 
-    void setPhrase(Phrase phrase) {
-      this.phrase = phrase;
-      button.setText(renderPhrase(phrase));
+    void setPhrases(ScoreKeeper.PhraseRow row) {
+      this.phrases = row.getPhrases();
+      button.setText(renderPhrase(phrases.get(0)));
     }
 
     public void setPlayer(final SequencePlayer player) {
       button.setAction(new SimpleAction("Play") {
         @Override
         void act() throws UnavailableException {
-          phrase.transpose(60).play(player);
+          lastPhrase++;
+          if (lastPhrase >= phrases.size()) {
+            lastPhrase = 0;
+          }
+          phrases.get(lastPhrase).play(player);
         }
       });
     }
     
     JComponent getComponent() {
       return button;
+    }
+
+    private String renderPhrase(Phrase phrase) {
+      StringBuilder result = new StringBuilder();
+      for (Interval interval : phrase.getIntervals()) {
+        if (result.length() > 0) {
+          result.append(" ");
+        }
+        result.append(interval.getShortName());
+      }
+      return result.toString();
     }
   }
 }

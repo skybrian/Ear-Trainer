@@ -13,7 +13,7 @@ import java.util.TreeMap;
 class ScoreKeeper {
   private int numRight = 0;
   private int numWrong = 0;
-  private Map<Phrase, PhraseScore> phraseScores = new TreeMap<Phrase, PhraseScore>();
+  private Map<Phrase, PhraseRow> phraseScores = new TreeMap<Phrase, PhraseRow>();
   private List<Runnable> scoreChangeListeners = new ArrayList<Runnable>();
 
   void reset() {
@@ -24,21 +24,21 @@ class ScoreKeeper {
   }
 
   void addResult(Phrase phrase, List<Interval> answer) {
-    phrase = phrase.normalize();
     boolean isRight = phrase.getIntervals().equals(answer);
     if (isRight) {
       numRight++;
     } else {
       numWrong++;
     }
-    PhraseScore score;
-    if (!phraseScores.containsKey(phrase)) {
-      score = new PhraseScore(phrase);
-      phraseScores.put(phrase, score);
+    PhraseRow row;
+    Phrase key = phrase.normalize();
+    if (!phraseScores.containsKey(key)) {
+      row = new PhraseRow();
+      phraseScores.put(key, row);
     } else {
-      score = phraseScores.get(phrase);
+      row = phraseScores.get(key);
     }
-    score.addResult(isRight);
+    row.addResult(phrase, isRight);
     fireChange();
   }
 
@@ -59,8 +59,8 @@ class ScoreKeeper {
     return out.toString();
   }
 
-  List<PhraseScore> getPhraseScores() {
-    return new ArrayList<PhraseScore>(phraseScores.values());    
+  List<PhraseRow> getPhraseRows() {
+    return new ArrayList<PhraseRow>(phraseScores.values());    
   }
   
   void addScoreChangeListener(Runnable listener) {
@@ -72,17 +72,14 @@ class ScoreKeeper {
       listener.run();
     }  
   }
-  
-  class PhraseScore {
-    private final Phrase phrase;
+
+  class PhraseRow {
+    private List<Phrase> phrases = new ArrayList<Phrase>();
     private int numRight;
     private int numWrong;
 
-    PhraseScore(Phrase phrase) {
-      this.phrase = phrase;
-    }
-
-    void addResult(boolean isRight) {
+    void addResult(Phrase phrase, boolean isRight) {
+      phrases.add(phrase);
       if (isRight) {
         numRight++;
       } else {
@@ -90,8 +87,8 @@ class ScoreKeeper {
       }
     }
     
-    Phrase getPhrase() {
-      return phrase;
+    List<Phrase> getPhrases() {
+      return phrases;
     }
     
     int getNumRight() {
