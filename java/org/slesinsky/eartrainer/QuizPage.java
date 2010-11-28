@@ -232,16 +232,16 @@ class QuizPage {
     private final JButton button;
 
     DirectionToggleButton(final QuestionChooser chooser) {
-      choice = chooser.getDirection().ordinal();
-      button = new JButton(QuestionChooser.Direction.values()[choice].getLabel());
+      choice = chooser.getDirectionSet().ordinal();
+      button = new JButton(Interval.DirectionSet.values()[choice].getLabel());
       button.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent actionEvent) {
           choice++;
-          if (choice >= QuestionChooser.Direction.values().length) {
+          if (choice >= Interval.DirectionSet.values().length) {
             choice = 0;
           }
-          QuestionChooser.Direction newDir = QuestionChooser.Direction.values()[choice];
-          chooser.setDirection(newDir);
+          Interval.DirectionSet newDir = Interval.DirectionSet.values()[choice];
+          chooser.setDirectionSet(newDir);
           button.setText(newDir.getLabel());
         }
       });

@@ -55,6 +55,10 @@ final class Interval implements Comparable<Interval> {
     return halfSteps >= 0;
   }
   
+  boolean isDescending() {
+    return halfSteps <= 0;
+  }
+
   Interval toAscending() {
     return new Interval(Math.abs(halfSteps));
   }
@@ -101,5 +105,31 @@ final class Interval implements Comparable<Interval> {
       default:
         return "?";
     }
-  }  
+  }
+
+  /**
+   * The possible directions in which to create intervals to be added to a
+   * question.
+   */
+  static enum DirectionSet {
+    ASCENDING("Up"),
+    DESCENDING("Down"),
+    BOTH("Both");
+
+    private final String label;
+
+    DirectionSet(String label) {
+      this.label = label;
+    }
+
+    String getLabel() {
+      return label;
+    }
+    
+    boolean contains(Interval interval) {
+      return this == BOTH
+          || (this == ASCENDING && interval.isAscending())
+          || (this == DESCENDING && interval.isDescending());
+    }
+  }
 }

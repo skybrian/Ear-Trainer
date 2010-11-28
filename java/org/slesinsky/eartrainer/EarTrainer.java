@@ -22,9 +22,9 @@ public class EarTrainer {
 
   public static App makeApp() throws UnavailableException {
     AnswerChoices choices = new AnswerChoices();
-    QuestionChooser chooser = new QuestionChooser(new Random());
-    SequencePlayer player = new SequencePlayer();
     ScoreKeeper scoreKeeper = new ScoreKeeper();
+    QuestionChooser chooser = new QuestionChooser(new Random(), scoreKeeper);
+    SequencePlayer player = new SequencePlayer();
     Quizzer quizzer = new Quizzer(chooser, choices, player, scoreKeeper);
     JComponent quizPage = QuizPage.create(choices, chooser, scoreKeeper, quizzer);
 

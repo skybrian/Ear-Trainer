@@ -92,7 +92,7 @@ class Phrase implements Comparable<Phrase> {
     return builder.getSequence();
   }
 
-  boolean isCorrect(List<Interval> ascendingIntervals) {
+  boolean containsIntervalsInOrder(List<Interval> ascendingIntervals) {
     if (ascendingIntervals.size() != intervals.size()) {
       return false;
     }
@@ -100,6 +100,24 @@ class Phrase implements Comparable<Phrase> {
       if (!intervals.get(i).toAscending().equals(ascendingIntervals.get(i))) {
         return false;        
       }      
+    }
+    return true;
+  }  
+
+  public boolean chosenFrom(IntervalSet ascendingIntervalSet) {
+    for (Interval interval : getIntervals()) {
+      if (!ascendingIntervalSet.contains(interval.toAscending())) {
+        return false;
+      }
+    }
+    return true;
+  }  
+
+  public boolean chosenFrom(Interval.DirectionSet direction) {
+    for (Interval interval : intervals) {
+      if (!direction.contains(interval)) {
+        return false;
+      }
     }
     return true;
   }  
