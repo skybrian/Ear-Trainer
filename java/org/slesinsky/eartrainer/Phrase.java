@@ -119,6 +119,10 @@ class Phrase implements Comparable<Phrase> {
   }
 
   public int compareTo(Phrase other) {
+    if (intervals.size() != other.intervals.size()) {
+      return intervals.size() < other.intervals.size() ? -1 : 1;
+    }
+
     Iterator<Interval> it = intervals.iterator();
     Iterator<Interval> otherIt = other.intervals.iterator();
     while (it.hasNext() && otherIt.hasNext()) {
@@ -127,9 +131,6 @@ class Phrase implements Comparable<Phrase> {
         return result;
       }
     }
-    if (it.hasNext() != otherIt.hasNext()) {
-      return it.hasNext() ? 1 : -1;
-    } 
 
     if (startNote != other.startNote) {
       return startNote < other.startNote ? -1 : 1;
