@@ -92,6 +92,18 @@ class Phrase implements Comparable<Phrase> {
     return builder.getSequence();
   }
 
+  boolean isCorrect(List<Interval> ascendingIntervals) {
+    if (ascendingIntervals.size() != intervals.size()) {
+      return false;
+    }
+    for (int i = 0 ; i < intervals.size(); i++) {
+      if (!intervals.get(i).toAscending().equals(ascendingIntervals.get(i))) {
+        return false;        
+      }      
+    }
+    return true;
+  }  
+  
   @Override
   public int hashCode() {
     return startNote ^ intervals.hashCode();

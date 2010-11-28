@@ -24,7 +24,7 @@ class ScoreKeeper {
   }
 
   void addResult(Phrase phrase, List<Interval> answer) {
-    boolean isRight = phrase.getIntervals().equals(answer);
+    boolean isRight = phrase.isCorrect(answer);
     if (isRight) {
       numRight++;
     } else {
