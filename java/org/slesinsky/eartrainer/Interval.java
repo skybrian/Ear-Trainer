@@ -8,8 +8,10 @@ package org.slesinsky.eartrainer;
 final class Interval implements Comparable<Interval> {
   static final Interval UNISON = new Interval(0);
   static final Interval MINOR_SECOND = new Interval(1);
+  static final Interval MINOR_THIRD = new Interval(2);
   static final Interval PERFECT_FOURTH = new Interval(5);
   static final Interval PERFECT_FIFTH = new Interval(7);
+  static final Interval MAJOR_SEVENTH = new Interval(11);
   static final Interval OCTAVE = new Interval(12);
 
   private final int halfSteps;
@@ -63,10 +65,20 @@ final class Interval implements Comparable<Interval> {
     return new Interval(Math.abs(halfSteps));
   }
 
-  Interval invert() {
+  Interval reverse() {
     return new Interval(-halfSteps);
   }
     
+  Interval invert() {
+    if (halfSteps >= 0 && halfSteps <= 12) {
+      return new Interval(-12 + halfSteps);
+    } else if (halfSteps >= -12 && halfSteps < 0) {
+      return new Interval(halfSteps + 12);
+    } else {
+      throw new RuntimeException("not implemented");
+    }
+  }
+
   @Override
   public boolean equals(Object o) {
     return o.getClass() == Interval.class && halfSteps == ((Interval) o).halfSteps;

@@ -15,5 +15,9 @@ class Util {
     List<T> answers = new ArrayList<T>(choices);
     return answers.get(randomness.nextInt(answers.size()));
   }
-  
+
+  static int modulus(int x, int n) {
+    int result = x % n;
+    return result < 0 ? result + n : result;
+  }
 }

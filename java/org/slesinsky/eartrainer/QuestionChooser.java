@@ -137,7 +137,7 @@ class QuestionChooser {
       Interval interval = intervalChoices.choose(randomness);
       if (directionChoices == Interval.DirectionSet.DESCENDING ||
           (directionChoices == Interval.DirectionSet.BOTH && randomness.nextBoolean())) {
-        interval = interval.invert();        
+        interval = interval.reverse();        
       }
       intervals.add(interval);
     }
