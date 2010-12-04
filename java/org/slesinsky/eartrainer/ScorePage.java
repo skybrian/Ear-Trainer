@@ -142,8 +142,7 @@ class ScorePage {
 
   private static class PhraseCell {
     private final JButton button;
-    private List<Phrase> phrases;
-    private int lastPhrase = -1;
+    private ScoreKeeper.PhraseRow row;
 
     PhraseCell() {
       button = new JButton();
@@ -151,19 +150,15 @@ class ScorePage {
     }
 
     void setPhrases(ScoreKeeper.PhraseRow row) {
-      this.phrases = row.getPhrases();
-      button.setText(renderPhrase(phrases.get(0)));
+      this.row = row;
+      button.setText(renderPhrase(row.getPhrase()));
     }
 
     public void setPlayer(final SequencePlayer player) {
       button.setAction(new SimpleAction("Play") {
         @Override
         void act() throws UnavailableException {
-          lastPhrase++;
-          if (lastPhrase >= phrases.size()) {
-            lastPhrase = 0;
-          }
-          phrases.get(lastPhrase).play(player);
+          row.play(player);
         }
       });
     }

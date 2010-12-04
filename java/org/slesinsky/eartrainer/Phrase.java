@@ -8,88 +8,53 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * A sequence of notes.
+ * A sequence of notes that may be played relative to any starting note.
  */
 class Phrase implements Comparable<Phrase> {
-  private final int startNote;
   private final List<Interval> intervals;
 
-  Phrase(int startNote, Iterable<Interval> intervals) {
-    this.startNote = startNote;
+  Phrase(Iterable<Interval> intervals) {
     this.intervals = new ArrayList<Interval>();
     for (Interval interval : intervals) {
       this.intervals.add(interval);
     }
   }
 
-  List<Integer> getNotes() {
-    int note = startNote;
-    List<Integer> result = new ArrayList<Integer>();
-    result.add(note);
-    for (Interval interval : intervals) {
-      note += interval.getHalfSteps();
-      result.add(note);
-    }
-    return result;
-  }
-
-  int getMinNote() {
-    int lowest = startNote;
-    for (int note : getNotes()) {
-      lowest = Math.min(lowest, note);
-    }
-    return lowest;
-  }
-
-  int getMaxNote() {
-    int highest = startNote;
-    for (int note : getNotes()) {
-      highest = Math.max(highest, note);
-    }
-    return highest;
-  }
-
-  int getRange() {
-    return getMaxNote() - getMinNote();
-  }
-  
   List<Interval> getIntervals() {
     return intervals;
   }
 
+  List<Integer> getNotes(int startNote) {
+    List<Integer> result = new ArrayList<Integer>();
+    result.add(startNote);
+    for (Interval interval : intervals) {
+      startNote += interval.getHalfSteps();
+      result.add(startNote);
+    }
+    return result;
+  }
+
+  int getRange() {
+    return getMaxNote(0) - getMinNote(0);
+  }
+
   /**
-   * Randomly transposes this phrase to within the given range.
-   * Returns null if the phrase doesn't fit within the range.
+   * Returns a start note such that the all the notes in the phrase will be between lowestNote
+   * and highestNote (inclusive). If the phrase cannot be played within this range, returns null.
    */
-  Phrase transposeRandomly(Random randomness, int lowestNote, int highestNote) {
-    int maxPhraseRange = highestNote - lowestNote;
-    if (getRange() > maxPhraseRange) {
+  Integer chooseRandomStartNote(Random randomness, int lowestNote, int highestNote) {
+    int minStartNote = lowestNote - getMinNote(0);
+    int maxStartNote = highestNote - getMaxNote(0);
+
+    if (minStartNote > maxStartNote) {
       return null;
+    } else {
+      return minStartNote + randomness.nextInt(maxStartNote - minStartNote + 1);
     }
-    int remainingRange = maxPhraseRange - getRange();
-    int newLowNote = lowestNote + randomness.nextInt(remainingRange + 1);
-    int oldLowNote = getMinNote();
-    return transpose(newLowNote - oldLowNote);
   }
 
-  Phrase transpose(int halfSteps) {
-    return new Phrase(startNote + halfSteps, intervals);
-  }
-
-  Phrase normalize() {
-    return new Phrase(0, intervals);
-  }
-
-  void play(SequencePlayer player) throws UnavailableException {
-    player.play(makeSequence());
-  }
-  
-  private Sequence makeSequence() throws UnavailableException {
-    SequenceBuilder builder = new SequenceBuilder();
-    for (int note : getNotes()) {
-      builder.addNote(note);
-    }
-    return builder.getSequence();
+  void play(SequencePlayer player, int startNote) throws UnavailableException {
+    player.play(makeSequence(startNote));
   }
 
   boolean containsIntervalsInOrder(List<Interval> ascendingIntervals) {
@@ -104,7 +69,7 @@ class Phrase implements Comparable<Phrase> {
     return true;
   }  
 
-  public boolean chosenFrom(IntervalSet ascendingIntervalSet) {
+  boolean chosenFrom(IntervalSet ascendingIntervalSet) {
     for (Interval interval : getIntervals()) {
       if (!ascendingIntervalSet.contains(interval.toAscending())) {
         return false;
@@ -113,7 +78,7 @@ class Phrase implements Comparable<Phrase> {
     return true;
   }  
 
-  public boolean chosenFrom(Interval.DirectionSet direction) {
+  boolean chosenFrom(Interval.DirectionSet direction) {
     for (Interval interval : intervals) {
       if (!direction.contains(interval)) {
         return false;
@@ -124,7 +89,7 @@ class Phrase implements Comparable<Phrase> {
   
   @Override
   public int hashCode() {
-    return startNote ^ intervals.hashCode();
+    return intervals.hashCode();
   }
 
   @Override
@@ -133,7 +98,7 @@ class Phrase implements Comparable<Phrase> {
       return false;
     }
     Phrase other = (Phrase) object;
-    return startNote == other.startNote && intervals.equals(other.intervals);
+    return intervals.equals(other.intervals);
   }
 
   public int compareTo(Phrase other) {
@@ -150,16 +115,13 @@ class Phrase implements Comparable<Phrase> {
       }
     }
 
-    if (startNote != other.startNote) {
-      return startNote < other.startNote ? -1 : 1;
-    }
     return 0;
   }
 
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append("Phrase(" + startNote +": ");
+    result.append("Phrase(");
     boolean first = true;
     for (Interval interval : intervals) {
       if (!first) {
@@ -170,5 +132,31 @@ class Phrase implements Comparable<Phrase> {
     }
     result.append(")");
     return result.toString();
+  }
+
+  // === private methods ===
+  
+  private int getMinNote(int startNote) {
+    int result = startNote;
+    for (int note : getNotes(startNote)) {
+      result = Math.min(result, note);
+    }
+    return result;
+  }
+
+  private int getMaxNote(int startNote) {
+    int result = startNote;
+    for (int note : getNotes(startNote)) {
+      result = Math.max(result, note);
+    }
+    return result;
+  }
+
+  private Sequence makeSequence(int startNote) throws UnavailableException {
+    SequenceBuilder builder = new SequenceBuilder();
+    for (int note : getNotes(startNote)) {
+      builder.addNote(note);
+    }
+    return builder.getSequence();
   }
 }

@@ -65,7 +65,7 @@ class Quizzer {
     if (currentQuestion.isCorrect(candidate, currentInterval)) {
       currentInterval++;
       if (currentInterval >= currentQuestion.getAnswerCount()) {
-        scoreKeeper.addResult(currentQuestion.getPhrase(), answers);
+        scoreKeeper.addResult(currentQuestion, answers);
         startQuestion();
       } else {
         choices.reset(currentQuestion.getChoices());        

@@ -88,11 +88,12 @@ class QuestionChooser {
       if (phrase.getRange() > maxPhraseRange) {
         continue;
       }
-      phrase = phrase.transposeRandomly(randomness, LOWEST_NOTE, HIGHEST_NOTE);
-      if (phrase == null) {
+      Integer startNote = phrase.chooseRandomStartNote(randomness, LOWEST_NOTE, HIGHEST_NOTE);
+      if (startNote == null) {
         continue;        
       }
-      return new Question(phrase, intervalChoices);
+      phrase = new Phrase(phrase.getIntervals());
+      return new Question(phrase, startNote, intervalChoices);
     }
   }
 
@@ -119,7 +120,7 @@ class QuestionChooser {
     for (int i = 0; i < noteCount - 1; i++) {
       phrase.addRandomInterval(intervalChoices, directionSet);
     }
-    return phrase.build(0);
+    return phrase.build();
   }
 
   private static class PhraseBuilder {
@@ -141,8 +142,8 @@ class QuestionChooser {
       intervals.add(interval);
     }
 
-    Phrase build(int startNote) {
-      return new Phrase(startNote, intervals);
+    Phrase build() {
+      return new Phrase(intervals);
     }
   }
 }

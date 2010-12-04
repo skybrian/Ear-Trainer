@@ -31,10 +31,10 @@ class ScoreKeeper {
     fireChange();
   }
 
-  void addResult(Phrase phrase, List<Interval> answer) {
-    Phrase key = phrase.normalize();
+  void addResult(Question question, List<Interval> answer) {
+    Phrase key = question.getPhrase();
     lastPhrase = key;
-    boolean isRight = phrase.containsIntervalsInOrder(answer);
+    boolean isRight = key.containsIntervalsInOrder(answer);
     if (isRight) {
       numRight++;
       lastWasWrong.remove(key);
@@ -45,12 +45,12 @@ class ScoreKeeper {
     
     PhraseRow row;
     if (!phraseScores.containsKey(key)) {
-      row = new PhraseRow();
+      row = new PhraseRow(key);
       phraseScores.put(key, row);
     } else {
       row = phraseScores.get(key);
     }
-    row.addResult(phrase, isRight);
+    row.addResult(question.getStartNote(), isRight);
     fireChange();
   }
 
@@ -96,21 +96,27 @@ class ScoreKeeper {
   }
 
   class PhraseRow {
-    private List<Phrase> phrases = new ArrayList<Phrase>();
+    private final Phrase phrase;
+    private final List<Integer> startNotes = new ArrayList<Integer>();
     private int numRight;
     private int numWrong;
-
-    void addResult(Phrase phrase, boolean isRight) {
-      phrases.add(phrase);
+    private int lastStartNote = -1;
+    
+    PhraseRow(Phrase phrase) {
+      this.phrase = phrase;
+    }
+    
+    void addResult(int startNote, boolean isRight) {
+      startNotes.add(startNote);
       if (isRight) {
         numRight++;
       } else {
         numWrong++;
       }
     }
-    
-    List<Phrase> getPhrases() {
-      return phrases;
+
+    Phrase getPhrase() {
+      return phrase;
     }
     
     int getNumRight() {
@@ -119,6 +125,19 @@ class ScoreKeeper {
     
     int getNumWrong() {
       return numWrong;
+    }
+
+    public void play(SequencePlayer player) throws UnavailableException {
+      if (startNotes.size() == 0) {
+        phrase.play(player, 60);
+        return;
+      }
+      
+      lastStartNote++;
+      if (lastStartNote >= startNotes.size()) {
+        lastStartNote = 0;
+      }
+      phrase.play(player, startNotes.get(lastStartNote));
     }
   }
 }

@@ -7,15 +7,17 @@ package org.slesinsky.eartrainer;
  */
 class Question {
   private final Phrase phrase;
+  private final int startNote;
   private final IntervalSet choices;
 
-  Question(Phrase phrase, IntervalSet choices) {
+  Question(Phrase phrase, int startNote, IntervalSet choices) {
     this.phrase = phrase;
+    this.startNote = startNote;
     this.choices = choices;
   }
 
   void play(SequencePlayer player) throws UnavailableException {
-    phrase.play(player);
+    phrase.play(player, startNote);
   }
 
   boolean isCorrect(Interval candidate, int position) {
@@ -33,5 +35,9 @@ class Question {
 
   Phrase getPhrase() {
     return phrase;
+  }
+
+  int getStartNote() {
+    return startNote;
   }
 }
