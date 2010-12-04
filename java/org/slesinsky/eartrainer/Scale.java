@@ -1,6 +1,7 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -50,6 +51,14 @@ class Scale implements Comparable<Scale> {
     this.bits = bits;
   }
 
+  Scale(int tonic, List<Integer> notes) {
+    int bits = 0;
+    for (int note : notes) {
+      bits |= (1 << Util.modulus(note - tonic, OCTAVE));
+    }
+    this.bits = bits;        
+  }
+  
   Scale rotate(Interval interval) {
     int halfSteps = Util.modulus(interval.getHalfSteps(), OCTAVE);
     return new Scale((bits << halfSteps | bits >>> (OCTAVE - halfSteps)) & ALL_BITS);  
@@ -64,6 +73,10 @@ class Scale implements Comparable<Scale> {
     return result;
   }
 
+  public boolean contains(Scale candidate) {
+    return (bits | candidate.bits) == bits;
+  }  
+  
   String getBitString() {
     StringBuilder result = new StringBuilder();
     int bits = this.bits;

@@ -8,7 +8,9 @@ package org.slesinsky.eartrainer;
 final class Interval implements Comparable<Interval> {
   static final Interval UNISON = new Interval(0);
   static final Interval MINOR_SECOND = new Interval(1);
-  static final Interval MINOR_THIRD = new Interval(2);
+  static final Interval MAJOR_SECOND = new Interval(2);
+  static final Interval MINOR_THIRD = new Interval(3);
+  static final Interval MAJOR_THIRD = new Interval(4);
   static final Interval PERFECT_FOURTH = new Interval(5);
   static final Interval PERFECT_FIFTH = new Interval(7);
   static final Interval MAJOR_SEVENTH = new Interval(11);

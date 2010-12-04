@@ -6,7 +6,7 @@ import junit.framework.TestCase;
 import java.util.Set;
 
 /**
- * Verifies calculations for scale types.
+ * Verifies calculations with scales.
  */
 public class ScaleTest extends TestCase {
 
