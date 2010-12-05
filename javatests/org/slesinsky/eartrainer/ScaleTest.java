@@ -54,9 +54,13 @@ public class ScaleTest extends TestCase {
     checkScaleSet(new Scale("111111111111").getRotations(),
         "111111111111" 
     );
-
   }
 
+  public void testContainsPhrase() throws Exception {
+    assertFalse(Scale.MAJOR_PENTATONIC.contains(Interval.MINOR_SECOND));
+    assertTrue(Scale.MAJOR_PENTATONIC.contains(Interval.MAJOR_SECOND));
+  }
+  
   // === end of tests ===
   
   private void checkRoundTrip(String bitString) {

@@ -1,6 +1,7 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -13,10 +14,11 @@ class Scale implements Comparable<Scale> {
   private static final int OCTAVE = 12;
   private static final int ALL_BITS = (1 << OCTAVE) - 1;
 
-  static Scale MAJOR = new Scale("101011010101");
-  static Scale MINOR = MAJOR.rotate(Interval.MINOR_THIRD.invert());
-  static Scale MAJOR_PENTATONIC = new Scale("101010010100");
-  static Scale MINOR_PENTATONIC = MAJOR.rotate(Interval.MINOR_THIRD.invert()); 
+  static final Scale MAJOR = new Scale("101011010101");
+  static final Scale MINOR = MAJOR.rotate(Interval.MINOR_THIRD.invert());
+  static final Scale MAJOR_PENTATONIC = new Scale("101010010100");
+  static final Scale MINOR_PENTATONIC = MAJOR.rotate(Interval.MINOR_THIRD.invert()); 
+  static final Scale CHROMATIC = new Scale("111111111111");
   
   // bits 0 to 11 may be set to indicate ascending intervals that may be played.
   // (0 is the tonic.  This is the reverse of the bitString.)
@@ -73,10 +75,24 @@ class Scale implements Comparable<Scale> {
     return result;
   }
 
-  public boolean contains(Scale candidate) {
-    return (bits | candidate.bits) == bits;
+  boolean contains(Interval interval) {
+    Scale intervalScale = new Scale(0, Arrays.asList(0, interval.getHalfSteps()));
+    return contains(intervalScale);
   }  
   
+  boolean contains(Scale candidateSubset) {
+    for (Scale scale : candidateSubset.getRotations()) {
+      if (containsWithoutRotation(scale)) {
+        return true;
+      }
+    }
+    return false;
+  }  
+  
+  boolean containsWithoutRotation(Scale candidate) {
+    return (bits | candidate.bits) == bits;
+  }
+
   String getBitString() {
     StringBuilder result = new StringBuilder();
     int bits = this.bits;

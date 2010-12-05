@@ -40,6 +40,17 @@ class IntervalSet {
     return new IntervalSet(newSet);
   }
 
+  IntervalSet intersectScale(Scale scale) {
+    Set<Interval> newSet = new TreeSet<Interval>();
+    for (Interval choice : choices) {
+      if (scale.contains(choice)) {
+        newSet.add(choice);
+      }
+    }        
+    return new IntervalSet(newSet);
+  }
+  
+  
   boolean contains(Interval interval) {
     return choices.contains(interval);
   }

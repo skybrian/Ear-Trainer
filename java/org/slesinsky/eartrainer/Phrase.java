@@ -39,14 +39,9 @@ class Phrase implements Comparable<Phrase> {
   }  
 
   boolean canTransposeToScale(Scale candidate) {
-    for (Scale scale : getScale().getRotations()) {
-      if (candidate.contains(scale)) {
-        return true;
-      }
-    }
-    return false;
+    return candidate.contains(getScale());
   }
-    
+
   int getRange() {
     return getMaxNote(0) - getMinNote(0);
   }

@@ -26,6 +26,7 @@ class QuestionChooser {
   private final Random randomness;
   private final ScoreKeeper scoreKeeper;
 
+  private Scale scale = Scale.MAJOR_PENTATONIC;
   private IntervalSet intervalChoices;
   private Interval.DirectionSet directionSet;
   private int noteCount;
@@ -37,7 +38,7 @@ class QuestionChooser {
     this.directionSet = DEFAULT_DIRECTION;
     this.noteCount = DEFAULT_NOTES_IN_PHRASE;
   }
-
+  
   void setEnabled(Interval choice, boolean newValue) {
     if (newValue) {
       intervalChoices = intervalChoices.with(choice);
@@ -50,6 +51,18 @@ class QuestionChooser {
     return intervalChoices.contains(interval);
   }
 
+  public boolean canChoose(Interval interval) {
+    return scale.contains(interval);
+  }  
+
+  public Scale getScale() {
+    return scale;
+  }  
+  
+  public void setScale(Scale scale) {
+    this.scale = scale;
+  }  
+  
   void setNoteCount(int newValue) {
     this.noteCount = newValue;
   }
@@ -73,14 +86,17 @@ class QuestionChooser {
         if (candidate != scoreKeeper.getLastPhrase() && 
             candidate.getIntervals().size() + 1 == noteCount &&
             candidate.chosenFrom(intervalChoices) &&
-            candidate.chosenFrom(directionSet)) {
+            candidate.chosenFrom(directionSet) &&
+            candidate.canTransposeToScale(scale)) {
           choices.add(candidate);            
         }
       }
       System.err.println("repeats: " + choices.size());
-      for (int tries = 0; tries < 10 && choices.size() < MIN_CHOICES; tries++) {
+      for (int tries = 0; tries < 100 && choices.size() < MIN_CHOICES; tries++) {
         Phrase candidate = chooseRandomPhrase();
-        if (candidate != scoreKeeper.getLastPhrase() && !choices.contains(candidate)) {
+        if (!candidate.equals(scoreKeeper.getLastPhrase()) && 
+            !choices.contains(candidate) &&
+            candidate.canTransposeToScale(scale)) {
           choices.add(candidate);  
         }
       }
@@ -93,7 +109,7 @@ class QuestionChooser {
         continue;        
       }
       phrase = new Phrase(phrase.getIntervals());
-      return new Question(phrase, startNote, intervalChoices);
+      return new Question(phrase, startNote, intervalChoices.intersectScale(scale));
     }
   }
 

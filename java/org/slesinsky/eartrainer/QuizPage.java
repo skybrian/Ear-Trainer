@@ -4,8 +4,10 @@ package org.slesinsky.eartrainer;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -158,8 +160,10 @@ class QuizPage {
     Box footer = Box.createHorizontalBox();
 
     Box leftSide = Box.createVerticalBox();
+    leftSide.add(makeScaleChooserWidget(chooser));
     leftSide.add(makeNoteCountWidget(chooser));
     leftSide.add(makeNoteDirectionWidget(chooser));
+    leftSide.setAlignmentX(Component.LEFT_ALIGNMENT);
     leftSide.setAlignmentY(Component.BOTTOM_ALIGNMENT);
     footer.add(leftSide);
 
@@ -168,10 +172,33 @@ class QuizPage {
     return footer;
   }
 
-  private static JComponent makeNoteCountWidget(final QuestionChooser chooser) {
+  private static JComponent makeScaleChooserWidget(final QuestionChooser chooser) {
+    final DefaultComboBoxModel model = new DefaultComboBoxModel(ScaleMenuItem.values());
+    model.setSelectedItem(ScaleMenuItem.find(chooser.getScale()));
+
+    JComboBox combo = new JComboBox(model) {
+      @Override
+      public Dimension getMaximumSize() {
+        return getPreferredSize();
+      }
+    };
+    
+    combo.addActionListener(new SimpleAction("change scale") {
+      @Override
+      void act() throws UnavailableException {
+        chooser.setScale(((ScaleMenuItem)model.getSelectedItem()).getScale());  
+      }
+    });
+    
     Box result = Box.createHorizontalBox();
-    result.add(new JLabel("Notes in next phrase:"));
-    result.add(makeSpacer());
+    result.add(new JLabel("Scale:"));
+    result.add(makeSpacer());    
+    result.add(combo);
+    result.setAlignmentX(Component.LEFT_ALIGNMENT);
+    return result;
+  }
+
+  private static JComponent makeNoteCountWidget(final QuestionChooser chooser) {
 
     final SpinnerNumberModel model = new SpinnerNumberModel(2, 2, 99, 1);
     model.addChangeListener(new ChangeListener() {
@@ -185,6 +212,10 @@ class QuizPage {
         return getPreferredSize();
       }
     };
+
+    Box result = Box.createHorizontalBox();
+    result.add(new JLabel("Notes in next phrase:"));
+    result.add(makeSpacer());
     result.add(spinner);
     result.setAlignmentX(Component.LEFT_ALIGNMENT);
     return result;
@@ -248,4 +279,39 @@ class QuizPage {
     }
   }
 
+  static enum ScaleMenuItem {
+    PENTATONIC("Pentatonic", Scale.MAJOR_PENTATONIC),
+    MAJOR("Major", Scale.MAJOR),
+    CHROMATIC("Chromatic", Scale.CHROMATIC);
+  
+    private final String label;
+    private final Scale scale;
+  
+    ScaleMenuItem(String label, Scale scale) {
+      this.label = label;
+      this.scale = scale;
+    }
+  
+    String getLabel() {
+      return label;
+    }
+  
+    Scale getScale() {
+      return scale;
+    }
+
+    @Override
+    public String toString() {
+      return label;
+    }
+
+    static ScaleMenuItem find(Scale scale) {
+      for (ScaleMenuItem item : values()) {
+        if (item.scale.equals(scale)) {
+          return item;
+        }
+      }
+      return null;
+    }
+  }
 }
