@@ -281,7 +281,9 @@ class QuizPage {
 
   static enum ScaleMenuItem {
     PENTATONIC("Pentatonic", Scale.MAJOR_PENTATONIC),
-    MAJOR("Major", Scale.MAJOR),
+    BLUES("Blues", Scale.BLUES),
+    MAJOR("Major / Natural Minor", Scale.MAJOR),
+    MINOR("Harmonic Minor", Scale.HARMONIC_MINOR),
     CHROMATIC("Chromatic", Scale.CHROMATIC);
   
     private final String label;

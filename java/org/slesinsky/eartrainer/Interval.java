@@ -12,6 +12,7 @@ final class Interval implements Comparable<Interval> {
   static final Interval MINOR_THIRD = new Interval(3);
   static final Interval MAJOR_THIRD = new Interval(4);
   static final Interval PERFECT_FOURTH = new Interval(5);
+  static final Interval TRITONE = new Interval(6);
   static final Interval PERFECT_FIFTH = new Interval(7);
   static final Interval MAJOR_SEVENTH = new Interval(11);
   static final Interval OCTAVE = new Interval(12);
