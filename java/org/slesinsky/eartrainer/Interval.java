@@ -128,7 +128,7 @@ final class Interval implements Comparable<Interval> {
     return new Iterable<Interval>() {
       public Iterator<Interval> iterator() {
         return new Iterator<Interval>() {
-          int current = start.halfSteps;
+          int current = start.halfSteps - 1;
 
           public boolean hasNext() {
             return current < end.halfSteps;

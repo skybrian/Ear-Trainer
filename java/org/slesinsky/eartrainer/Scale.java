@@ -15,11 +15,9 @@ class Scale implements Comparable<Scale> {
   private static final int ALL_BITS = (1 << OCTAVE) - 1;
 
   static final Scale MAJOR = new Scale("101011010101");
-  static final Scale MINOR = MAJOR.rotate(Interval.MINOR_THIRD.invert());
-  static final Scale HARMONIC_MINOR = new Scale("101101011001");
   static final Scale MAJOR_PENTATONIC = new Scale("101010010100");
-  static final Scale MINOR_PENTATONIC = MAJOR.rotate(Interval.MINOR_THIRD.invert()); 
-  static final Scale BLUES = MINOR_PENTATONIC.add(Interval.TRITONE);
+  static final Scale BLUES = new Scale("101101110010");
+  static final Scale HARMONIC_MINOR = new Scale("101101011001");
   static final Scale CHROMATIC = new Scale("111111111111");
   
   // bits 0 to 11 may be set to indicate ascending intervals that may be played.
@@ -63,12 +61,6 @@ class Scale implements Comparable<Scale> {
     this.bits = bits;        
   }
 
-  private Scale add(Interval interval) {
-    int bits = this.bits;
-    bits |= (1 << normalize(interval.getHalfSteps()));
-    return new Scale(bits);
-  }
-   
   Scale rotate(Interval interval) {
     int halfSteps = normalize(interval.getHalfSteps());
     return new Scale((bits << halfSteps | bits >>> (OCTAVE - halfSteps)) & ALL_BITS);  

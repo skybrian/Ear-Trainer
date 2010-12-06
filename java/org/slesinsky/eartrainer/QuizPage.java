@@ -106,7 +106,7 @@ class QuizPage {
       IntervalChoices choices) {
     JPanel intervals = new JPanel();
     intervals.setOpaque(false);
-    intervals.setLayout(new GridLayout(7, 2));
+    intervals.setLayout(new GridLayout(8, 2));
 
     boolean isLeftColumn = true;
     for (Interval interval : Interval.range(Interval.UNISON, Interval.OCTAVE)) {
