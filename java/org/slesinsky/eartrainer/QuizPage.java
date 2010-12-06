@@ -127,10 +127,10 @@ class QuizPage {
     JCheckBox checkBox = new JCheckBox(new AbstractAction() {
       public void actionPerformed(ActionEvent actionEvent) {
         JCheckBox box = (JCheckBox) actionEvent.getSource();
-        chooser.setEnabled(interval, box.isSelected());
+        chooser.setIntervalAllowed(interval, box.isSelected());
       }
     });
-    checkBox.setSelected(chooser.isEnabled(interval));
+    checkBox.setSelected(IntervalFilter.DEFAULT.allows(interval));
 
     final JButton chooseButton = new JButton(new SimpleAction(interval.getName()) {
       @Override

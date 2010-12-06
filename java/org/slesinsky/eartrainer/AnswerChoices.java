@@ -1,6 +1,7 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -26,10 +27,10 @@ class AnswerChoices {
     this.answerListeners.put(intervalToWatch, listener);
   }
 
-  void reset(IntervalSet choices) {
+  void reset(Collection<Interval> intervalsToEnable) {
     wrongAnswers.clear();
     enabledAnswers.clear();
-    enabledAnswers.addAll(choices.items());
+    enabledAnswers.addAll(intervalsToEnable);
     for (Interval answer : ALL) {
       Runnable listener = answerListeners.get(answer);
       if (listener != null) {

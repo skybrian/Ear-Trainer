@@ -16,8 +16,6 @@ class QuestionChooser {
   private static final int HIGHEST_NOTE =
       MIDDLE_C + Interval.OCTAVE.getHalfSteps() + Interval.PERFECT_FIFTH.getHalfSteps();
 
-  private static final IntervalSet DEFAULT_INTERVALS_IN_PHRASE =
-      new IntervalSet(Interval.PERFECT_FOURTH, Interval.PERFECT_FIFTH);
   private static final int DEFAULT_NOTES_IN_PHRASE = 2;
   private static final Interval.DirectionSet DEFAULT_DIRECTION = Interval.DirectionSet.ASCENDING;
 
@@ -27,33 +25,25 @@ class QuestionChooser {
   private final ScoreKeeper scoreKeeper;
 
   private Scale scale = Scale.MAJOR_PENTATONIC;
-  private IntervalSet intervalChoices;
+  private IntervalFilter intervalFilter;
   private Interval.DirectionSet directionSet;
   private int noteCount;
 
   QuestionChooser(Random randomness, ScoreKeeper scoreKeeper) {
     this.randomness = randomness;
     this.scoreKeeper = scoreKeeper;
-    this.intervalChoices = DEFAULT_INTERVALS_IN_PHRASE;
+    this.intervalFilter = IntervalFilter.DEFAULT;
     this.directionSet = DEFAULT_DIRECTION;
     this.noteCount = DEFAULT_NOTES_IN_PHRASE;
   }
   
-  void setEnabled(Interval choice, boolean newValue) {
+  void setIntervalAllowed(Interval choice, boolean newValue) {
     if (newValue) {
-      intervalChoices = intervalChoices.with(choice);
+      intervalFilter = intervalFilter.enable(choice);
     } else {
-      intervalChoices = intervalChoices.without(choice);
+      intervalFilter = intervalFilter.disable(choice);
     }
   }
-
-  boolean isEnabled(Interval interval) {
-    return intervalChoices.contains(interval);
-  }
-
-  public boolean canChoose(Interval interval) {
-    return scale.containsAnywhere(interval);
-  }  
 
   public Scale getScale() {
     return scale;
@@ -85,7 +75,7 @@ class QuestionChooser {
       for (Phrase candidate : candidates) {
         if (candidate != scoreKeeper.getLastPhrase() && 
             candidate.getIntervals().size() + 1 == noteCount &&
-            candidate.chosenFrom(intervalChoices) &&
+            intervalFilter.allows(candidate) &&
             candidate.chosenFrom(directionSet) &&
             candidate.canTransposeToScale(scale)) {
           choices.add(candidate);            
@@ -109,7 +99,7 @@ class QuestionChooser {
         continue;        
       }
       phrase = new Phrase(phrase.getIntervals());
-      return new Question(phrase, startNote, intervalChoices.intersectScale(scale));
+      return new Question(phrase, startNote, intervalFilter.intersectScale(scale));
     }
   }
 
@@ -118,9 +108,9 @@ class QuestionChooser {
    * interval, and padded out with the smallest interval.
    */
   private int getLargestPhraseRange() {
-    Interval smallest = intervalChoices.getSmallest();
-    Interval secondSmallest = intervalChoices.getSecondSmallest();
-    Interval largest = intervalChoices.getLargest();
+    Interval smallest = intervalFilter.getSmallest();
+    Interval secondSmallest = intervalFilter.getSecondSmallest();
+    Interval largest = intervalFilter.getLargest();
     int largestPhraseRange = largest.getHalfSteps();
     if (noteCount > 2) {
       largestPhraseRange += secondSmallest.getHalfSteps();
@@ -134,7 +124,7 @@ class QuestionChooser {
   private Phrase chooseRandomPhrase() {
     PhraseBuilder phrase = new PhraseBuilder(randomness);
     for (int i = 0; i < noteCount - 1; i++) {
-      phrase.addRandomInterval(intervalChoices, directionSet);
+      phrase.addRandomInterval(intervalFilter, directionSet);
     }
     return phrase.build();
   }
@@ -148,9 +138,10 @@ class QuestionChooser {
     }
 
     void addRandomInterval(
-        IntervalSet intervalChoices,
+        IntervalFilter intervalFilter,
         Interval.DirectionSet directionChoices) {
-      Interval interval = Util.choose(randomness, intervalChoices.items());
+      Interval interval = 
+          Util.choose(randomness, intervalFilter.getAllowedAscendingIntervals());
       if (directionChoices == Interval.DirectionSet.DESCENDING ||
           (directionChoices == Interval.DirectionSet.BOTH && randomness.nextBoolean())) {
         interval = interval.reverse();        

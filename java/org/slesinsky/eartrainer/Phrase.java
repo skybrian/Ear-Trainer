@@ -75,16 +75,7 @@ class Phrase implements Comparable<Phrase> {
       }      
     }
     return true;
-  }  
-
-  boolean chosenFrom(IntervalSet ascendingIntervalSet) {
-    for (Interval interval : getIntervals()) {
-      if (!ascendingIntervalSet.contains(interval.toAscending())) {
-        return false;
-      }
-    }
-    return true;
-  }  
+  }
 
   boolean chosenFrom(Interval.DirectionSet direction) {
     for (Interval interval : intervals) {

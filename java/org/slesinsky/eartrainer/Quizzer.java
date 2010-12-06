@@ -41,7 +41,7 @@ class Quizzer {
   void startQuestion() throws UnavailableException {
     currentQuestion = chooser.chooseQuestion();
     currentInterval = 0;
-    choices.reset(currentQuestion.getChoices());
+    choices.reset(currentQuestion.getChoices().getAllowedAscendingIntervals());
     answers.clear();
     playQuestion();
   }
@@ -68,7 +68,7 @@ class Quizzer {
         scoreKeeper.addResult(currentQuestion, answers);
         startQuestion();
       } else {
-        choices.reset(currentQuestion.getChoices());        
+        choices.reset(currentQuestion.getChoices().getAllowedAscendingIntervals());        
       }
     } else {
       choices.removeChoice(candidate);

@@ -8,9 +8,9 @@ package org.slesinsky.eartrainer;
 class Question {
   private final Phrase phrase;
   private final int startNote;
-  private final IntervalSet choices;
+  private final IntervalFilter choices;
 
-  Question(Phrase phrase, int startNote, IntervalSet choices) {
+  Question(Phrase phrase, int startNote, IntervalFilter choices) {
     this.phrase = phrase;
     this.startNote = startNote;
     this.choices = choices;
@@ -29,7 +29,7 @@ class Question {
     return phrase.getIntervals().size();
   }
 
-  IntervalSet getChoices() {
+  IntervalFilter getChoices() {
     return choices;
   }
 
