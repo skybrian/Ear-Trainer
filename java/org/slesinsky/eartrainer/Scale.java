@@ -58,19 +58,19 @@ class Scale implements Comparable<Scale> {
   Scale(int tonic, List<Integer> notes) {
     int bits = 0;
     for (int note : notes) {
-      bits |= (1 << Util.modulus(note - tonic, OCTAVE));
+      bits |= (1 << normalize(note - tonic));
     }
     this.bits = bits;        
   }
 
   private Scale add(Interval interval) {
     int bits = this.bits;
-    bits |= (1 << Util.modulus(interval.getHalfSteps(), OCTAVE));
+    bits |= (1 << normalize(interval.getHalfSteps()));
     return new Scale(bits);
   }
    
   Scale rotate(Interval interval) {
-    int halfSteps = Util.modulus(interval.getHalfSteps(), OCTAVE);
+    int halfSteps = normalize(interval.getHalfSteps());
     return new Scale((bits << halfSteps | bits >>> (OCTAVE - halfSteps)) & ALL_BITS);  
   }
 
@@ -83,12 +83,16 @@ class Scale implements Comparable<Scale> {
     return result;
   }
 
-  boolean contains(Interval interval) {
-    Scale intervalScale = new Scale(0, Arrays.asList(0, interval.getHalfSteps()));
-    return contains(intervalScale);
+  boolean containsFromTonic(Interval interval) {    
+    return (bits & (1 << normalize(interval.getHalfSteps()))) > 0;
   }  
   
-  boolean contains(Scale candidateSubset) {
+  boolean containsAnywhere(Interval interval) {
+    Scale intervalScale = new Scale(0, Arrays.asList(0, interval.getHalfSteps()));
+    return containsAnywhere(intervalScale);
+  }  
+  
+  boolean containsAnywhere(Scale candidateSubset) {
     for (Scale scale : candidateSubset.getRotations()) {
       if (containsWithoutRotation(scale)) {
         return true;
@@ -135,6 +139,10 @@ class Scale implements Comparable<Scale> {
     }
   }
 
+  private static int normalize(int halfSteps) {
+    return Util.modulus(halfSteps, OCTAVE);
+  }  
+  
   private static int rotateLeft(int bits) {
     return (bits << 1 | bits >>> 11) & ALL_BITS;
   }

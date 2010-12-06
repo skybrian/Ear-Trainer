@@ -39,7 +39,7 @@ class Phrase implements Comparable<Phrase> {
   }  
 
   boolean canTransposeToScale(Scale candidate) {
-    return candidate.contains(getScale());
+    return candidate.containsAnywhere(getScale());
   }
 
   int getRange() {

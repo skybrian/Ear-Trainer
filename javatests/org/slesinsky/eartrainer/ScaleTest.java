@@ -23,13 +23,13 @@ public class ScaleTest extends TestCase {
     checkRotations("100000000000", "010000000000", Interval.MINOR_SECOND);
     checkRotations("100000000000", "000000000001", Interval.MAJOR_SEVENTH);
     checkRotations("100000000000", "100000000000", Interval.OCTAVE);
-    checkRotations("100000000000", "010000000000", Interval.OCTAVE.add(Interval.MINOR_SECOND));
+    checkRotations("100000000000", "010000000000", Interval.OCTAVE.up());
     checkRotations("000000000001", "100000000000", Interval.MINOR_SECOND);
     checkRotations("000000000001", "000000000010", Interval.MINOR_SECOND.reverse());
     checkRotations("100000000000", "000000000001", Interval.MINOR_SECOND.reverse());
     checkRotations("000000000001", "100000000000", Interval.MAJOR_SEVENTH.reverse());
     checkRotations("000000000001", "000000000001", Interval.OCTAVE.reverse());
-    checkRotations("000000000001", "000000000010", Interval.OCTAVE.add(Interval.MINOR_SECOND).reverse());
+    checkRotations("000000000001", "000000000010", Interval.OCTAVE.up().reverse());
   }
 
   public void testGetRotations() throws Exception {
@@ -57,8 +57,8 @@ public class ScaleTest extends TestCase {
   }
 
   public void testContainsPhrase() throws Exception {
-    assertFalse(Scale.MAJOR_PENTATONIC.contains(Interval.MINOR_SECOND));
-    assertTrue(Scale.MAJOR_PENTATONIC.contains(Interval.MAJOR_SECOND));
+    assertFalse(Scale.MAJOR_PENTATONIC.containsAnywhere(Interval.MINOR_SECOND));
+    assertTrue(Scale.MAJOR_PENTATONIC.containsAnywhere(Interval.MAJOR_SECOND));
   }
   
   // === end of tests ===

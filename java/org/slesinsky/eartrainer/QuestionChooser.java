@@ -52,7 +52,7 @@ class QuestionChooser {
   }
 
   public boolean canChoose(Interval interval) {
-    return scale.contains(interval);
+    return scale.containsAnywhere(interval);
   }  
 
   public Scale getScale() {
@@ -118,9 +118,9 @@ class QuestionChooser {
    * interval, and padded out with the smallest interval.
    */
   private int getLargestPhraseRange() {
-    Interval smallest = intervalChoices.getSmallest(1).toInterval();
-    Interval secondSmallest = intervalChoices.getSmallest(2).getLargest(1).toInterval();
-    Interval largest = intervalChoices.getLargest(1).toInterval();
+    Interval smallest = intervalChoices.getSmallest();
+    Interval secondSmallest = intervalChoices.getSecondSmallest();
+    Interval largest = intervalChoices.getLargest();
     int largestPhraseRange = largest.getHalfSteps();
     if (noteCount > 2) {
       largestPhraseRange += secondSmallest.getHalfSteps();
@@ -150,7 +150,7 @@ class QuestionChooser {
     void addRandomInterval(
         IntervalSet intervalChoices,
         Interval.DirectionSet directionChoices) {
-      Interval interval = intervalChoices.choose(randomness);
+      Interval interval = Util.choose(randomness, intervalChoices.items());
       if (directionChoices == Interval.DirectionSet.DESCENDING ||
           (directionChoices == Interval.DirectionSet.BOTH && randomness.nextBoolean())) {
         interval = interval.reverse();        

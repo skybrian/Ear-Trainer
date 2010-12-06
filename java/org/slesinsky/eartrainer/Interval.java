@@ -1,6 +1,8 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
+import java.util.Iterator;
+
 /**
  * A musical interval. (The distance between two notes on a piano.)
  * May be ascending or descending.
@@ -52,10 +54,10 @@ final class Interval implements Comparable<Interval> {
     return halfSteps;
   }
 
-  Interval add(Interval other) {
-    return new Interval(this.halfSteps + other.halfSteps);
+  Interval up() {
+    return new Interval(this.halfSteps + 1);
   }
-
+  
   boolean isAscending() {
     return halfSteps >= 0;
   }
@@ -120,6 +122,29 @@ final class Interval implements Comparable<Interval> {
       default:
         return "?";
     }
+  }
+
+  static Iterable<Interval> range(final Interval start, final Interval end) {
+    return new Iterable<Interval>() {
+      public Iterator<Interval> iterator() {
+        return new Iterator<Interval>() {
+          int current = start.halfSteps;
+
+          public boolean hasNext() {
+            return current < end.halfSteps;
+          }
+
+          public Interval next() {
+            current++;
+            return new Interval(current);
+          }
+
+          public void remove() {
+            throw new UnsupportedOperationException("not implemented");
+          }
+        };
+      }
+    };
   }
 
   /**

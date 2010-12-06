@@ -10,7 +10,7 @@ import java.util.TreeSet;
  * Keeps track of the set of answers remaining to be chosen for the current question.
  */
 class AnswerChoices {
-  static final IntervalSet ALL = IntervalSet.forRange(Interval.UNISON, Interval.OCTAVE);
+  static final Iterable<Interval> ALL = Interval.range(Interval.UNISON, Interval.OCTAVE);
 
   private final Set<Interval> enabledAnswers;
   private final Set<Interval> wrongAnswers;
@@ -29,9 +29,12 @@ class AnswerChoices {
   void reset(IntervalSet choices) {
     wrongAnswers.clear();
     enabledAnswers.clear();
-    enabledAnswers.addAll(choices.each());
-    for (Interval answer : ALL.each()) {
-      answerListeners.get(answer).run();
+    enabledAnswers.addAll(choices.items());
+    for (Interval answer : ALL) {
+      Runnable listener = answerListeners.get(answer);
+      if (listener != null) {
+        listener.run();
+      }
     }
   }
 

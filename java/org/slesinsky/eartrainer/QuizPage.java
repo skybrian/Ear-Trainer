@@ -26,7 +26,6 @@ import java.awt.event.ActionListener;
  * Provides a method to construct the Quiz Page UI.
  */
 class QuizPage {
-  static final IntervalSet BLACK_KEYS = IntervalSet.forHalfSteps(1, 3, 6, 8, 10);
 
   static JComponent create(AnswerChoices choices, QuestionChooser chooser,
       ScoreKeeper scoreKeeper, Quizzer quizzer) {
@@ -107,11 +106,12 @@ class QuizPage {
       AnswerChoices choices) {
     JPanel intervals = new JPanel();
     intervals.setOpaque(false);
-    intervals.setLayout(new GridLayout(8, 2));
+    intervals.setLayout(new GridLayout(7, 2));
 
     boolean isLeftColumn = true;
-    for (Interval interval : AnswerChoices.ALL.each()) {
-      if (isLeftColumn && !BLACK_KEYS.contains(interval)) {
+    for (Interval interval : AnswerChoices.ALL) {
+      if (isLeftColumn && 
+          Scale.MAJOR.containsFromTonic(interval)) {
         intervals.add(Box.createGlue());
       } else {
         isLeftColumn = !isLeftColumn;
