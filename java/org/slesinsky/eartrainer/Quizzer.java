@@ -14,12 +14,12 @@ class Quizzer {
 
   private Question currentQuestion;
   private int currentInterval;
-  private final AnswerChoices choices;
+  private final IntervalChoices choices;
   private final List<Interval> answers;
 
   private final List<Runnable> answerChosenListeners;
 
-  Quizzer(QuestionChooser chooser, AnswerChoices choices, SequencePlayer player,
+  Quizzer(QuestionChooser chooser, IntervalChoices choices, SequencePlayer player,
       ScoreKeeper scoreKeeper) {
     this.chooser = chooser;
     this.choices = choices;
@@ -41,7 +41,7 @@ class Quizzer {
   void startQuestion() throws UnavailableException {
     currentQuestion = chooser.chooseQuestion();
     currentInterval = 0;
-    choices.reset(currentQuestion.getChoices().getAllowedAscendingIntervals());
+    choices.reset(currentQuestion.getChoices());
     answers.clear();
     playQuestion();
   }
@@ -68,7 +68,7 @@ class Quizzer {
         scoreKeeper.addResult(currentQuestion, answers);
         startQuestion();
       } else {
-        choices.reset(currentQuestion.getChoices().getAllowedAscendingIntervals());        
+        choices.reset(currentQuestion.getChoices());        
       }
     } else {
       choices.removeChoice(candidate);

@@ -27,7 +27,7 @@ import java.awt.event.ActionListener;
  */
 class QuizPage {
 
-  static JComponent create(AnswerChoices choices, QuestionChooser chooser,
+  static JComponent create(IntervalChoices choices, QuestionChooser chooser,
       ScoreKeeper scoreKeeper, Quizzer quizzer) {
     return makeVerticalPage(
         makeHeader(quizzer),
@@ -103,13 +103,13 @@ class QuizPage {
    * on the left.
    */
   private static JPanel makeAnswerButtonGrid(QuestionChooser chooser, Quizzer quizzer,
-      AnswerChoices choices) {
+      IntervalChoices choices) {
     JPanel intervals = new JPanel();
     intervals.setOpaque(false);
     intervals.setLayout(new GridLayout(7, 2));
 
     boolean isLeftColumn = true;
-    for (Interval interval : AnswerChoices.ALL) {
+    for (Interval interval : Interval.range(Interval.UNISON, Interval.OCTAVE)) {
       if (isLeftColumn && 
           Scale.MAJOR.containsFromTonic(interval)) {
         intervals.add(Box.createGlue());
@@ -122,7 +122,7 @@ class QuizPage {
   }
 
   private static JComponent makeAnswerCell(final Interval interval, final QuestionChooser chooser,
-      final Quizzer quizzer, final AnswerChoices choices) {
+      final Quizzer quizzer, final IntervalChoices choices) {
 
     JCheckBox checkBox = new JCheckBox(new AbstractAction() {
       public void actionPerformed(ActionEvent actionEvent) {
@@ -142,7 +142,7 @@ class QuizPage {
 
     choices.putChangeListener(interval, new Runnable() {
       public void run() {
-        boolean enabled = choices.canChoose(interval);
+        boolean enabled = choices.allows(interval);
         chooseButton.setEnabled(enabled);
       }
     });

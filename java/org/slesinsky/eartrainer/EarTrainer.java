@@ -21,7 +21,7 @@ public class EarTrainer {
   }
 
   public static App makeApp() throws UnavailableException {
-    AnswerChoices choices = new AnswerChoices();
+    IntervalChoices choices = new IntervalChoices();
     ScoreKeeper scoreKeeper = new ScoreKeeper();
     QuestionChooser chooser = new QuestionChooser(new Random(), scoreKeeper);
     SequencePlayer player = new SequencePlayer();

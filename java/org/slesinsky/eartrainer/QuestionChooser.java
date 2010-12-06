@@ -71,7 +71,6 @@ class QuestionChooser {
       // repeat recently wrong answers, if still valid
       List<Phrase> choices = new ArrayList<Phrase>();
       Set<Phrase> candidates = scoreKeeper.getWrongPhrases();
-      System.err.println("candidates: " + candidates.size());
       for (Phrase candidate : candidates) {
         if (candidate != scoreKeeper.getLastPhrase() && 
             candidate.getIntervals().size() + 1 == noteCount &&
@@ -81,7 +80,6 @@ class QuestionChooser {
           choices.add(candidate);            
         }
       }
-      System.err.println("repeats: " + choices.size());
       for (int tries = 0; tries < 100 && choices.size() < MIN_CHOICES; tries++) {
         Phrase candidate = chooseRandomPhrase();
         if (!candidate.equals(scoreKeeper.getLastPhrase()) && 
