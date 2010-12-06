@@ -75,13 +75,23 @@ class IntervalFilter {
     return intervals;
   }
 
+  boolean isEmpty() {
+    return enabled.isEmpty();
+  }
+    
   Interval getSmallest() {
     return enabled.first();
   }
   
   Interval getSecondSmallest() {
     Iterator<Interval> it = enabled.iterator();
+    if (!it.hasNext()) {
+      return null;
+    }
     it.next();
+    if (!it.hasNext()) {
+      return null;
+    }
     return it.next();
   }
 

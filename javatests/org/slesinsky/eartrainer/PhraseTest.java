@@ -22,7 +22,6 @@ public class PhraseTest extends TestCase {
     checkCanTransposeToScale(true, new Scale("001000010000"), Interval.PERFECT_FOURTH);
     checkCanTransposeToScale(false, new Scale("110000000000"), Interval.PERFECT_FOURTH);
     checkCanTransposeToScale(true, Scale.MAJOR, Interval.PERFECT_FOURTH);
-    checkCanTransposeToScale(true, Scale.MINOR, Interval.PERFECT_FOURTH);
     checkCanTransposeToScale(true, Scale.MAJOR, Interval.PERFECT_FOURTH, Interval.MAJOR_SECOND);
     checkCanTransposeToScale(true, Scale.MAJOR, Interval.PERFECT_FOURTH, Interval.MINOR_SECOND);
     checkCanTransposeToScale(false, Scale.MAJOR, Interval.MINOR_SECOND, Interval.MINOR_SECOND);

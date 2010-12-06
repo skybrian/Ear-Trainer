@@ -110,8 +110,7 @@ class QuizPage {
 
     boolean isLeftColumn = true;
     for (Interval interval : Interval.range(Interval.UNISON, Interval.OCTAVE)) {
-      if (isLeftColumn && 
-          Scale.MAJOR.containsFromTonic(interval)) {
+      if (isLeftColumn && Scale.MAJOR.getTonic().isNote(interval)) {
         intervals.add(Box.createGlue());
       } else {
         isLeftColumn = !isLeftColumn;
@@ -201,7 +200,10 @@ class QuizPage {
   private static JComponent makeNoteCountWidget(final QuestionChooser chooser) {
 
     final SpinnerNumberModel model = 
-        new SpinnerNumberModel(QuestionChooser.DEFAULT_NOTES_IN_PHRASE, 2, 9, 1);
+        new SpinnerNumberModel(
+            QuestionChooser.DEFAULT_NOTES_IN_PHRASE, 
+            2,
+            QuestionChooser.MAX_NOTES_IN_PHRASE, 1);
     model.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent changeEvent) {
         chooser.setNoteCount(model.getNumber().intValue());

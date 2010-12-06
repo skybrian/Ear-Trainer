@@ -3,6 +3,7 @@ package org.slesinsky.eartrainer;
 
 import junit.framework.TestCase;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,7 +61,22 @@ public class ScaleTest extends TestCase {
     assertFalse(Scale.MAJOR_PENTATONIC.containsAnywhere(Interval.MINOR_SECOND));
     assertTrue(Scale.MAJOR_PENTATONIC.containsAnywhere(Interval.MAJOR_SECOND));
   }
-  
+
+  public void testGenerateIntervals() throws Exception {
+    Scale.Note start = new Scale("100001010001").getTonic();
+    IntervalFilter filter =
+        new IntervalFilter(Interval.MAJOR_THIRD, Interval.PERFECT_FOURTH, Interval.PERFECT_FIFTH);
+
+    List<Interval> result = start.generate(DirectionFilter.ASCENDING, filter);
+    checkIntervalList(result, "P4^ P5^");
+
+    result = start.generate(DirectionFilter.DESCENDING, filter);
+    checkIntervalList(result, "P5v P4v");
+
+    result = start.generate(DirectionFilter.BOTH, filter);
+    checkIntervalList(result, "P5v P4v P4^ P5^");
+  }
+
   // === end of tests ===
   
   private void checkRoundTrip(String bitString) {
@@ -81,5 +97,17 @@ public class ScaleTest extends TestCase {
       actual.append(item.getBitString() + "\n");
     }
     assertEquals(expected.toString(), actual.toString());    
+  }
+
+  private void checkIntervalList(List<Interval> candidate, String expected) {
+    StringBuilder actual = new StringBuilder();
+    for (Interval item : candidate) {
+      if (actual.length() > 0) {
+        actual.append(" ");
+      }
+      actual.append(item.getShortNameAscii());
+    }
+    
+    assertEquals(expected, actual.toString());        
   }
 }

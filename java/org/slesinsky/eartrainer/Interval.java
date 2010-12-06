@@ -19,6 +19,9 @@ final class Interval implements Comparable<Interval> {
   static final Interval MAJOR_SEVENTH = new Interval(11);
   static final Interval OCTAVE = new Interval(12);
 
+  private static final String UP_ARROW = "\u2191";
+  private static final String DOWN_ARROW = "\u2193";
+
   private final int halfSteps;
 
   Interval(int halfSteps) {
@@ -46,9 +49,13 @@ final class Interval implements Comparable<Interval> {
   }
 
   String getShortName() {
-    return getAbbreviation() + (isAscending() ? "\u2191" : "\u2193");
+    return getAbbreviation() + (isAscending() ? UP_ARROW : DOWN_ARROW);
   }
 
+  String getShortNameAscii() {
+    return getAbbreviation() + (isAscending() ? "^" : "v");
+  }
+    
   /** Returns a negative value if descending */
   int getHalfSteps() {
     return halfSteps;

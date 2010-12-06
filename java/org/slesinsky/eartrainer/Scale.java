@@ -1,6 +1,7 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,10 @@ class Scale implements Comparable<Scale> {
     this.bits = bits;
   }
 
+  Note getTonic() {
+    return new Note(0);
+  }  
+  
   Scale(int tonic, List<Integer> notes) {
     int bits = 0;
     for (int note : notes) {
@@ -77,10 +82,6 @@ class Scale implements Comparable<Scale> {
     return result;
   }
 
-  boolean containsFromTonic(Interval interval) {    
-    return (bits & (1 << normalize(interval.getHalfSteps()))) > 0;
-  }  
-  
   boolean containsAnywhere(Interval interval) {
     Scale intervalScale = new Scale(0, Arrays.asList(0, interval.getHalfSteps()));
     return containsAnywhere(intervalScale);
@@ -139,5 +140,47 @@ class Scale implements Comparable<Scale> {
   
   private static int rotateLeft(int bits) {
     return (bits << 1 | bits >>> 11) & ALL_BITS;
+  }
+
+  private boolean containsFromTonic(int halfSteps) {
+    return (bits & (1 << normalize(halfSteps))) > 0;
+  }
+
+  /**
+   * A note relative to the tonic of this scale. 
+   * (0 is tonic).
+   */
+  class Note {
+    private int halfSteps;
+
+    Note(int halfSteps) {
+      this.halfSteps = normalize(halfSteps);
+    }
+
+    /**
+     * Returns true if going from this note to the note at the given interval
+     * remains on the scale.
+     */
+    boolean isNote(Interval interval) {
+      return containsFromTonic(halfSteps + interval.getHalfSteps());
+    }
+
+    Note add(Interval interval) {
+      return new Note(this.halfSteps + interval.getHalfSteps());        
+    }
+    
+    /**
+     * Returns all intervals that go to notes on the scale, such that they pass the
+     * given filters.
+     */
+    public List<Interval> generate(DirectionFilter direction, IntervalFilter intervals) {
+      List<Interval> result = new ArrayList<Interval>();
+      for (Interval interval : intervals.generate(direction)) {
+        if (isNote(interval)) {
+          result.add(interval);
+        }
+      }
+      return result;
+    }
   }
 }

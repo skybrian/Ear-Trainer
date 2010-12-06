@@ -3,7 +3,8 @@ package org.slesinsky.eartrainer;
 
 import javax.sound.midi.Sequence;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -11,24 +12,29 @@ import java.util.Random;
  * A sequence of notes that may be played relative to any starting note.
  */
 class Phrase implements Comparable<Phrase> {
-  private final List<Interval> intervals;
+  private final int[] intervals;
 
-  Phrase(Iterable<Interval> intervals) {
-    this.intervals = new ArrayList<Interval>();
+  Phrase(Collection<Interval> intervals) {
+    this.intervals = new int[intervals.size()];
+    int i = 0;
     for (Interval interval : intervals) {
-      this.intervals.add(interval);
+      this.intervals[i++] = interval.getHalfSteps(); 
     }
   }
 
   List<Interval> getIntervals() {
-    return intervals;
+    List<Interval> result = new ArrayList<Interval>();
+    for (int interval : intervals) {
+      result.add(new Interval(interval));
+    }
+    return result;
   }
 
   List<Integer> getNotes(int startNote) {
     List<Integer> result = new ArrayList<Integer>();
     result.add(startNote);
-    for (Interval interval : intervals) {
-      startNote += interval.getHalfSteps();
+    for (int interval : intervals) {
+      startNote += interval;
       result.add(startNote);
     }
     return result;
@@ -66,6 +72,7 @@ class Phrase implements Comparable<Phrase> {
   }
 
   boolean containsIntervalsInOrder(List<Interval> ascendingIntervals) {
+    List<Interval> intervals = getIntervals();
     if (ascendingIntervals.size() != intervals.size()) {
       return false;
     }
@@ -79,7 +86,7 @@ class Phrase implements Comparable<Phrase> {
 
   @Override
   public int hashCode() {
-    return intervals.hashCode();
+    return Arrays.hashCode(intervals);
   }
 
   @Override
@@ -88,23 +95,24 @@ class Phrase implements Comparable<Phrase> {
       return false;
     }
     Phrase other = (Phrase) object;
-    return intervals.equals(other.intervals);
+    return compareTo(other) == 0;
   }
 
   public int compareTo(Phrase other) {
-    if (intervals.size() != other.intervals.size()) {
-      return intervals.size() < other.intervals.size() ? -1 : 1;
+    int size = intervals.length;
+    int otherSize = other.intervals.length;
+    if (size != otherSize) {
+      return size < otherSize ? -1 : 1;
     }
 
-    Iterator<Interval> it = intervals.iterator();
-    Iterator<Interval> otherIt = other.intervals.iterator();
-    while (it.hasNext() && otherIt.hasNext()) {
-      int result = it.next().compareTo(otherIt.next());
-      if (result != 0) {
-        return result;
+    for (int i = 0; i < size; i++) {
+      int here = intervals[i];
+      int there = other.intervals[i];
+      if (here != there) {
+        return here < there ? -1 : 1;
       }
     }
-
+    
     return 0;
   }
 
@@ -113,7 +121,7 @@ class Phrase implements Comparable<Phrase> {
     StringBuilder result = new StringBuilder();
     result.append("Phrase(");
     boolean first = true;
-    for (Interval interval : intervals) {
+    for (Interval interval : getIntervals()) {
       if (!first) {
         result.append(" ");
       }
@@ -148,5 +156,36 @@ class Phrase implements Comparable<Phrase> {
       builder.addNote(note);
     }
     return builder.getSequence();
+  }
+
+  /**
+   * Mutable variant of a phrase.
+   */
+  static class Builder {
+    private final List<Interval> intervals = new ArrayList<Interval>();
+    
+    void add(Interval interval) {
+      intervals.add(interval);    
+    }
+    
+    void pop() {
+      intervals.remove(intervals.size() - 1);
+    }
+  
+    Phrase build() {
+      return new Phrase(intervals);
+    }
+
+    int range() {
+      int min = 0;
+      int max = 0;
+      int current = 0;
+      for (Interval interval : intervals) {
+        current += interval.getHalfSteps();
+        min = Math.min(current, min);
+        max = Math.max(current, max);
+      }
+      return max - min;
+    }
   }
 }

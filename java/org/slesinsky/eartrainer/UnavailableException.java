@@ -8,4 +8,8 @@ public class UnavailableException extends Exception {
   UnavailableException(Throwable throwable) {
     super(throwable);
   }
+
+  UnavailableException(String message) {
+    super(message);
+  }
 }
