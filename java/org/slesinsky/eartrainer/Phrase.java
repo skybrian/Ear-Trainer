@@ -77,15 +77,6 @@ class Phrase implements Comparable<Phrase> {
     return true;
   }
 
-  boolean chosenFrom(Interval.DirectionSet direction) {
-    for (Interval interval : intervals) {
-      if (!direction.contains(interval)) {
-        return false;
-      }
-    }
-    return true;
-  }  
-  
   @Override
   public int hashCode() {
     return intervals.hashCode();

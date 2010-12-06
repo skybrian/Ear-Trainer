@@ -2,7 +2,6 @@
 package org.slesinsky.eartrainer;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -63,8 +62,17 @@ class IntervalFilter {
     return true;
   }
 
-  Collection<Interval> getAllowedAscendingIntervals() {
-    return Collections.unmodifiableSet(enabled);
+  Collection<Interval> generate(DirectionFilter filter) {
+    SortedSet<Interval> intervals = new TreeSet<Interval>();
+    for (Interval interval : enabled) {        
+      if (filter.allows(interval)) {
+        intervals.add(interval);
+      }
+      if (filter.allows(interval.reverse())) {
+        intervals.add(interval.reverse());
+      }
+    }
+    return intervals;
   }
 
   Interval getSmallest() {

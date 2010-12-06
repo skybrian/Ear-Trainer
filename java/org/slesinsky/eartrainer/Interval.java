@@ -147,29 +147,4 @@ final class Interval implements Comparable<Interval> {
     };
   }
 
-  /**
-   * The possible directions in which to create intervals to be added to a
-   * question.
-   */
-  static enum DirectionSet {
-    ASCENDING("Up"),
-    DESCENDING("Down"),
-    BOTH("Both");
-
-    private final String label;
-
-    DirectionSet(String label) {
-      this.label = label;
-    }
-
-    String getLabel() {
-      return label;
-    }
-    
-    boolean contains(Interval interval) {
-      return this == BOTH
-          || (this == ASCENDING && interval.isAscending())
-          || (this == DESCENDING && interval.isDescending());
-    }
-  }
 }

@@ -20,6 +20,8 @@ class Scale implements Comparable<Scale> {
   static final Scale HARMONIC_MINOR = new Scale("101101011001");
   static final Scale CHROMATIC = new Scale("111111111111");
   
+  static final Scale DEFAULT = MAJOR_PENTATONIC;
+  
   // bits 0 to 11 may be set to indicate ascending intervals that may be played.
   // (0 is the tonic.  This is the reverse of the bitString.)
   private final int bits;

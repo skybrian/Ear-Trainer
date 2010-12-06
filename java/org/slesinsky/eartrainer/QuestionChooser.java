@@ -2,6 +2,7 @@
 package org.slesinsky.eartrainer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -16,24 +17,24 @@ class QuestionChooser {
   private static final int HIGHEST_NOTE =
       MIDDLE_C + Interval.OCTAVE.getHalfSteps() + Interval.PERFECT_FIFTH.getHalfSteps();
 
-  private static final int DEFAULT_NOTES_IN_PHRASE = 2;
-  private static final Interval.DirectionSet DEFAULT_DIRECTION = Interval.DirectionSet.ASCENDING;
+  static final int DEFAULT_NOTES_IN_PHRASE = 2;
 
   private static final int MIN_CHOICES = 3;
 
   private final Random randomness;
   private final ScoreKeeper scoreKeeper;
 
-  private Scale scale = Scale.MAJOR_PENTATONIC;
+  private Scale scale;
   private IntervalFilter intervalFilter;
-  private Interval.DirectionSet directionSet;
+  private DirectionFilter directionFilter;
   private int noteCount;
 
   QuestionChooser(Random randomness, ScoreKeeper scoreKeeper) {
     this.randomness = randomness;
     this.scoreKeeper = scoreKeeper;
+    this.scale = Scale.DEFAULT;
     this.intervalFilter = IntervalFilter.DEFAULT;
-    this.directionSet = DEFAULT_DIRECTION;
+    this.directionFilter = DirectionFilter.DEFAULT;
     this.noteCount = DEFAULT_NOTES_IN_PHRASE;
   }
   
@@ -45,10 +46,6 @@ class QuestionChooser {
     }
   }
 
-  public Scale getScale() {
-    return scale;
-  }  
-  
   public void setScale(Scale scale) {
     this.scale = scale;
   }  
@@ -57,12 +54,8 @@ class QuestionChooser {
     this.noteCount = newValue;
   }
 
-  Interval.DirectionSet getDirectionSet() {
-    return directionSet;
-  }
-
-  void setDirectionSet(Interval.DirectionSet newValue) {
-    this.directionSet = newValue;
+  void setDirectionFilter(DirectionFilter newValue) {
+    this.directionFilter = newValue;
   }
 
   Question chooseQuestion() throws UnavailableException {
@@ -75,7 +68,7 @@ class QuestionChooser {
         if (candidate != scoreKeeper.getLastPhrase() && 
             candidate.getIntervals().size() + 1 == noteCount &&
             intervalFilter.allows(candidate) &&
-            candidate.chosenFrom(directionSet) &&
+            directionFilter.allows(candidate) &&
             candidate.canTransposeToScale(scale)) {
           choices.add(candidate);            
         }
@@ -120,35 +113,14 @@ class QuestionChooser {
   }
 
   private Phrase chooseRandomPhrase() {
-    PhraseBuilder phrase = new PhraseBuilder(randomness);
+    List<Interval> intervals = new ArrayList<Interval>();
+    
+    IntervalFilter filter = intervalFilter.intersectScale(scale);
     for (int i = 0; i < noteCount - 1; i++) {
-      phrase.addRandomInterval(intervalFilter, directionSet);
-    }
-    return phrase.build();
-  }
-
-  private static class PhraseBuilder {
-    private final Random randomness;
-    private final List<Interval> intervals = new ArrayList<Interval>();
-
-    PhraseBuilder(Random randomness) {
-      this.randomness = randomness;
+      Collection<Interval> choices = filter.generate(directionFilter);
+      intervals.add(Util.choose(randomness, choices));
     }
 
-    void addRandomInterval(
-        IntervalFilter intervalFilter,
-        Interval.DirectionSet directionChoices) {
-      Interval interval = 
-          Util.choose(randomness, intervalFilter.getAllowedAscendingIntervals());
-      if (directionChoices == Interval.DirectionSet.DESCENDING ||
-          (directionChoices == Interval.DirectionSet.BOTH && randomness.nextBoolean())) {
-        interval = interval.reverse();        
-      }
-      intervals.add(interval);
-    }
-
-    Phrase build() {
-      return new Phrase(intervals);
-    }
+    return new Phrase(intervals);
   }
 }

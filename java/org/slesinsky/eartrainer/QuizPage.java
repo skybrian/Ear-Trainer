@@ -174,7 +174,7 @@ class QuizPage {
 
   private static JComponent makeScaleChooserWidget(final QuestionChooser chooser) {
     final DefaultComboBoxModel model = new DefaultComboBoxModel(ScaleMenuItem.values());
-    model.setSelectedItem(ScaleMenuItem.find(chooser.getScale()));
+    model.setSelectedItem(ScaleMenuItem.find(Scale.DEFAULT));
 
     JComboBox combo = new JComboBox(model) {
       @Override
@@ -200,7 +200,8 @@ class QuizPage {
 
   private static JComponent makeNoteCountWidget(final QuestionChooser chooser) {
 
-    final SpinnerNumberModel model = new SpinnerNumberModel(2, 2, 99, 1);
+    final SpinnerNumberModel model = 
+        new SpinnerNumberModel(QuestionChooser.DEFAULT_NOTES_IN_PHRASE, 2, 9, 1);
     model.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent changeEvent) {
         chooser.setNoteCount(model.getNumber().intValue());
@@ -263,17 +264,17 @@ class QuizPage {
     private final JButton button;
 
     DirectionToggleButton(final QuestionChooser chooser) {
-      choice = chooser.getDirectionSet().ordinal();
-      button = new JButton(Interval.DirectionSet.values()[choice].getLabel());
+      choice = DirectionFilter.DEFAULT.ordinal();
+      button = new JButton(DirectionFilter.DEFAULT.getLabel());
       button.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent actionEvent) {
           choice++;
-          if (choice >= Interval.DirectionSet.values().length) {
+          if (choice >= DirectionFilter.values().length) {
             choice = 0;
           }
-          Interval.DirectionSet newDir = Interval.DirectionSet.values()[choice];
-          chooser.setDirectionSet(newDir);
-          button.setText(newDir.getLabel());
+          DirectionFilter newFilter = DirectionFilter.values()[choice];
+          chooser.setDirectionFilter(newFilter);
+          button.setText(newFilter.getLabel());
         }
       });
     }
