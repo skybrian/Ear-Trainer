@@ -106,14 +106,17 @@ class QuestionChooser {
     Interval smallest = intervalFilter.getSmallest();
     Interval secondSmallest = intervalFilter.getSecondSmallest();
     Interval largest = intervalFilter.getLargest();
-    int largestPhraseRange = largest.getHalfSteps();
-    if (noteCount > 2 && secondSmallest != null) {
-      largestPhraseRange += secondSmallest.getHalfSteps();
+    
+    int range = largest.getHalfSteps();
+    int notesLeft = noteCount - 1;
+
+    if (secondSmallest != null) {
+      range += secondSmallest.getHalfSteps() * notesLeft;
+    } else {
+      range += smallest.getHalfSteps() * notesLeft;
     }
-    for (int i = MIN_CHOICES; i < noteCount; i++) {
-      largestPhraseRange += smallest.getHalfSteps();
-    }
-    return Math.min(HIGHEST_NOTE - LOWEST_NOTE, largestPhraseRange);
+
+    return Math.min(HIGHEST_NOTE - LOWEST_NOTE, range);
   }
 
   private List<Phrase> generatePhrases() {
@@ -125,7 +128,8 @@ class QuestionChooser {
 
     IntervalFilter filter = intervalFilter.intersectScale(this.scale);
     for (Scale scale : this.scale.getRotations()) {
-      generatePhrases(filter, getMaxPhraseRange(), scale.getTonic(), 
+      Scale.Note tonic = scale.getTonic();
+      generatePhrases(filter, getMaxPhraseRange(), tonic, 
           new Phrase.Builder(), noteCount - 1, result);
     }
     
@@ -136,12 +140,13 @@ class QuestionChooser {
   private void generatePhrases(IntervalFilter filter, int maxPhraseRange, Scale.Note currentNote,
       Phrase.Builder currentPhrase, int remainingNotes, Set<Phrase> result) {
 
-    if (currentPhrase.range() > maxPhraseRange) {
+    if (!currentNote.inScale() || currentPhrase.range() > maxPhraseRange) {
       return;  
     }
 
     if (remainingNotes == 0) {
-      result.add(currentPhrase.build());
+      Phrase phrase = currentPhrase.build();
+      result.add(phrase);
       return;
     }
     

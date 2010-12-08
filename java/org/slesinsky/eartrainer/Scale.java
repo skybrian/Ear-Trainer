@@ -158,11 +158,10 @@ class Scale implements Comparable<Scale> {
     }
 
     /**
-     * Returns true if going from this note to the note at the given interval
-     * remains on the scale.
+     * Returns true if this note is part of the associated scale.
      */
-    boolean isNote(Interval interval) {
-      return containsFromTonic(halfSteps + interval.getHalfSteps());
+    public boolean inScale() {
+      return containsFromTonic(halfSteps);
     }
 
     Note add(Interval interval) {
@@ -176,7 +175,7 @@ class Scale implements Comparable<Scale> {
     public List<Interval> generate(DirectionFilter direction, IntervalFilter intervals) {
       List<Interval> result = new ArrayList<Interval>();
       for (Interval interval : intervals.generate(direction)) {
-        if (isNote(interval)) {
+        if (add(interval).inScale()) {
           result.add(interval);
         }
       }

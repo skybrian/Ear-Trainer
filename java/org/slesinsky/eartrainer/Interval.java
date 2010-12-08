@@ -110,7 +110,12 @@ final class Interval implements Comparable<Interval> {
       return 1;
     }
   }
-  
+
+  @Override
+  public String toString() {
+    return "Interval(" + getShortNameAscii() + ")";
+  }
+
   private String getAbbreviation() {
     switch (Math.abs(halfSteps)) {
       case 0: return "U";

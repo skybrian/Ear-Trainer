@@ -110,7 +110,7 @@ class QuizPage {
 
     boolean isLeftColumn = true;
     for (Interval interval : Interval.range(Interval.UNISON, Interval.OCTAVE)) {
-      if (isLeftColumn && Scale.MAJOR.getTonic().isNote(interval)) {
+      if (isLeftColumn && Scale.MAJOR.getTonic().add(interval).inScale()) {
         intervals.add(Box.createGlue());
       } else {
         isLeftColumn = !isLeftColumn;
