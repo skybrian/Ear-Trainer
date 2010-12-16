@@ -63,7 +63,7 @@ class QuestionChooser {
 
     // repeat recently wrong answers, if still valid
     List<Phrase> choices = new ArrayList<Phrase>();
-    Set<Phrase> candidates = scoreKeeper.getWrongPhrases();
+    Set<Phrase> candidates = scoreKeeper.getPhrasesWithWinningStreakLessThan(2);
     for (Phrase candidate : candidates) {
       if (candidate != scoreKeeper.getLastPhrase() &&
           candidate.getIntervals().size() + 1 == noteCount &&

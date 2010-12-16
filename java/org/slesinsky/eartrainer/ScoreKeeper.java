@@ -2,6 +2,7 @@
 package org.slesinsky.eartrainer;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Formatter;
 import java.util.HashSet;
 import java.util.List;
@@ -18,15 +19,12 @@ class ScoreKeeper {
   private Map<Phrase, PhraseRow> phraseScores = new TreeMap<Phrase, PhraseRow>();
   private List<Runnable> scoreChangeListeners = new ArrayList<Runnable>();
   // normalized
-  private Set<Phrase> lastWasWrong = new HashSet<Phrase>();
-  // normalized
   private Phrase lastPhrase;
 
   void reset() {
     numRight = 0;
     numWrong = 0;
     phraseScores.clear();
-    lastWasWrong.clear();
     lastPhrase = null;
     fireChange();
   }
@@ -37,10 +35,8 @@ class ScoreKeeper {
     boolean isRight = key.containsIntervalsInOrder(answer);
     if (isRight) {
       numRight++;
-      lastWasWrong.remove(key);
     } else {
       numWrong++;
-      lastWasWrong.add(key);
     }
     
     PhraseRow row;
@@ -59,8 +55,14 @@ class ScoreKeeper {
   }
 
   // returns normalized phrases
-  Set<Phrase> getWrongPhrases() {
-    return lastWasWrong;
+  Set<Phrase> getPhrasesWithWinningStreakLessThan(int range) {
+    Set<Phrase> result = new HashSet<Phrase>();
+    for (PhraseRow row : phraseScores.values()) {
+      if (row.getNumTries() < range || row.getNumWrong(range) > 0) {
+        result.add(row.getPhrase());  
+      }
+    }
+    return result;
   }
 
   // returns normalized phrase
@@ -98,35 +100,46 @@ class ScoreKeeper {
   class PhraseRow {
     private final Phrase phrase;
     private final List<Integer> startNotes = new ArrayList<Integer>();
-    private int numRight;
-    private int numWrong;
+    private final BitSet wasAnswerCorrect = new BitSet();
     private int lastStartNote = -1;
     
     PhraseRow(Phrase phrase) {
       this.phrase = phrase;
     }
     
-    void addResult(int startNote, boolean isRight) {
+    void addResult(int startNote, boolean wasRight) {
       startNotes.add(startNote);
-      if (isRight) {
-        numRight++;
-      } else {
-        numWrong++;
+      if (wasRight) {
+        wasAnswerCorrect.set(getNumTries() - 1);
       }
     }
 
     Phrase getPhrase() {
       return phrase;
     }
+
+    public int getNumTries() {
+      return startNotes.size();
+    }
     
     int getNumRight() {
-      return numRight;
+      return wasAnswerCorrect.cardinality();
     }
     
     int getNumWrong() {
-      return numWrong;
+      return startNotes.size() - getNumRight();
     }
-
+    
+    int getNumWrong(int range) {
+      int result = 0;
+      for (int i = getNumTries() - 1; i >= 0 && range > 0; i--, range--) {
+        if (!wasAnswerCorrect.get(i)) {
+          result++;
+        }
+      }
+      return result;
+    }
+    
     public void play(SequencePlayer player) throws UnavailableException {
       if (startNotes.size() == 0) {
         phrase.play(player, 60);
