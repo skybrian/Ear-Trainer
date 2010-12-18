@@ -11,7 +11,7 @@ import javax.sound.midi.Track;
  * Builds a Midi sequence that plays some notes.
  */
 class SequenceBuilder {
-  private static final int CHANNEL = 4;
+  static final int CHANNEL = 4;
   private static final int VELOCITY = 90;
 
   private final Sequence sequence;
@@ -27,6 +27,16 @@ class SequenceBuilder {
     }
   }
 
+  final void addProgramChange(Sound sound) throws UnavailableException {
+    try {
+      ShortMessage msg = new ShortMessage();
+      msg.setMessage(ShortMessage.PROGRAM_CHANGE, CHANNEL, sound.program, 0);
+      track.add(new MidiEvent(msg, currentBeat));
+    } catch (InvalidMidiDataException e) {
+      throw new UnavailableException(e);
+    }
+  }
+  
   void addNote(int note) throws UnavailableException {
 
     ShortMessage noteOn;

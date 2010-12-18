@@ -17,7 +17,7 @@ class Question {
   }
 
   void play(SequencePlayer player) throws UnavailableException {
-    phrase.play(player, startNote);
+    player.play(phrase, startNote);
   }
 
   boolean isCorrect(Interval candidate, int position) {

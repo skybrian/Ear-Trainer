@@ -1,7 +1,6 @@
 // Copyright 2010 Brian Slesinsky
 package org.slesinsky.eartrainer;
 
-import javax.sound.midi.Sequence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,10 +64,6 @@ class Phrase implements Comparable<Phrase> {
     } else {
       return minStartNote + randomness.nextInt(maxStartNote - minStartNote + 1);
     }
-  }
-
-  void play(SequencePlayer player, int startNote) throws UnavailableException {
-    player.play(makeSequence(startNote));
   }
 
   boolean containsIntervalsInOrder(List<Interval> ascendingIntervals) {
@@ -148,14 +143,6 @@ class Phrase implements Comparable<Phrase> {
       result = Math.max(result, note);
     }
     return result;
-  }
-
-  private Sequence makeSequence(int startNote) throws UnavailableException {
-    SequenceBuilder builder = new SequenceBuilder();
-    for (int note : getNotes(startNote)) {
-      builder.addNote(note);
-    }
-    return builder.getSequence();
   }
 
   /**

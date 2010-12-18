@@ -28,12 +28,12 @@ import java.awt.event.ActionListener;
 class QuizPage {
 
   static JComponent create(IntervalChoices choices, QuestionChooser chooser,
-      ScoreKeeper scoreKeeper, Quizzer quizzer) {
+      ScoreKeeper scoreKeeper, Quizzer quizzer, SequencePlayer player) {
     return makeVerticalPage(
         makeHeader(quizzer),
         makeAnswerBar(quizzer),
         makeAnswerButtonGrid(chooser, quizzer, choices),
-        makeFooter(chooser, scoreKeeper));
+        makeFooter(chooser, player, scoreKeeper));
   }
 
   private static JComponent makeVerticalPage(JComponent... sections) {
@@ -155,13 +155,15 @@ class QuizPage {
     return panel;
   }
 
-  private static JComponent makeFooter(QuestionChooser chooser, ScoreKeeper scoreKeeper) {
+  private static JComponent makeFooter(QuestionChooser chooser, SequencePlayer player,
+      ScoreKeeper scoreKeeper) {
     Box footer = Box.createHorizontalBox();
 
     Box leftSide = Box.createVerticalBox();
     leftSide.add(makeScaleChooserWidget(chooser));
     leftSide.add(makeNoteCountWidget(chooser));
     leftSide.add(makeNoteDirectionWidget(chooser));
+    leftSide.add(makeSoundChooserWidget(player));
     leftSide.setAlignmentX(Component.LEFT_ALIGNMENT);
     leftSide.setAlignmentY(Component.BOTTOM_ALIGNMENT);
     footer.add(leftSide);
@@ -232,6 +234,32 @@ class QuizPage {
     return result;
   }
 
+  private static JComponent makeSoundChooserWidget(final SequencePlayer player) {
+
+    final DefaultComboBoxModel model = new DefaultComboBoxModel(player.getSounds());
+    model.setSelectedItem(player.getDefaultSound());
+
+    JComboBox combo = new JComboBox(model) {
+      @Override
+      public Dimension getMaximumSize() {
+        return getPreferredSize();
+      }
+    };    
+    
+    combo.addActionListener(new SimpleAction("change sound") {
+      @Override
+      void act() throws UnavailableException {
+        player.setSound((Sound)model.getSelectedItem());  
+      }
+    });    
+    
+    Box result = Box.createHorizontalBox();
+    result.add(new JLabel("Sound: "));
+    result.add(combo);    
+    result.setAlignmentX(Component.LEFT_ALIGNMENT);
+    return result;
+  }  
+  
   private static JComponent makeScoreWidget(final ScoreKeeper scoreKeeper) {
     final JButton resetButton = new JButton(new SimpleAction("Reset") {
       @Override

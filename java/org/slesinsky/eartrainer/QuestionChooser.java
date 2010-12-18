@@ -133,7 +133,7 @@ class QuestionChooser {
           new Phrase.Builder(), noteCount - 1, result);
     }
     
-    System.err.println("phrase count: " + result.size());
+    System.out.println("phrase count: " + result.size());
     return new ArrayList<Phrase>(result);
   }
 

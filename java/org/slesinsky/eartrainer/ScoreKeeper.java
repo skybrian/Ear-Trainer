@@ -142,7 +142,7 @@ class ScoreKeeper {
     
     public void play(SequencePlayer player) throws UnavailableException {
       if (startNotes.size() == 0) {
-        phrase.play(player, 60);
+        player.play(phrase, 60);
         return;
       }
       
@@ -150,7 +150,7 @@ class ScoreKeeper {
       if (lastStartNote >= startNotes.size()) {
         lastStartNote = 0;
       }
-      phrase.play(player, startNotes.get(lastStartNote));
+      player.play(phrase, startNotes.get(lastStartNote));
     }
   }
 }

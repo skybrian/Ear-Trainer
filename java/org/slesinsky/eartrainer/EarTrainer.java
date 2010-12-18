@@ -26,7 +26,7 @@ public class EarTrainer {
     QuestionChooser chooser = new QuestionChooser(new Random(), scoreKeeper);
     SequencePlayer player = new SequencePlayer();
     Quizzer quizzer = new Quizzer(chooser, choices, player, scoreKeeper);
-    JComponent quizPage = QuizPage.create(choices, chooser, scoreKeeper, quizzer);
+    JComponent quizPage = QuizPage.create(choices, chooser, scoreKeeper, quizzer, player);
 
     JTabbedPane tabs = new JTabbedPane();
     tabs.addTab("Quiz", quizPage);
